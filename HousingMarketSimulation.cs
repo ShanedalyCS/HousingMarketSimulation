@@ -26,7 +26,16 @@ public class HousingMarketSimulation
         market.LogHouseDetails();
 
         Simulation simulation = new(market);
-        simulation.RunTick();
+
+        Console.WriteLine("How many months so simulate?");
+        int numberOfTicks = Console.Read();
+
+        for (int i = 0; i < numberOfTicks; i++)
+        {
+            simulation.RunTick();
+            Thread.Sleep(2000);
+        }
+
 
 
     }
