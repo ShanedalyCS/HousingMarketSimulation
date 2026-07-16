@@ -1,0 +1,14 @@
+D:\.projects\Housing Market Simulation\obj\Debug\net10.0\Housing Market Simulation.GeneratedMSBuildEditorConfig.editorconfig
+D:\.projects\Housing Market Simulation\obj\Debug\net10.0\Housing Market Simulation.AssemblyInfoInputs.cache
+D:\.projects\Housing Market Simulation\obj\Debug\net10.0\Housing Market Simulation.AssemblyInfo.cs
+D:\.projects\Housing Market Simulation\obj\Debug\net10.0\Housing Market Simulation.csproj.CoreCompileInputs.cache
+D:\.projects\Housing Market Simulation\bin\Debug\net10.0\Housing Market Simulation.exe
+D:\.projects\Housing Market Simulation\bin\Debug\net10.0\Housing Market Simulation.deps.json
+D:\.projects\Housing Market Simulation\bin\Debug\net10.0\Housing Market Simulation.runtimeconfig.json
+D:\.projects\Housing Market Simulation\bin\Debug\net10.0\Housing Market Simulation.dll
+D:\.projects\Housing Market Simulation\bin\Debug\net10.0\Housing Market Simulation.pdb
+D:\.projects\Housing Market Simulation\obj\Debug\net10.0\Housing Market Simulation.dll
+D:\.projects\Housing Market Simulation\obj\Debug\net10.0\refint\Housing Market Simulation.dll
+D:\.projects\Housing Market Simulation\obj\Debug\net10.0\Housing Market Simulation.pdb
+D:\.projects\Housing Market Simulation\obj\Debug\net10.0\Housing Market Simulation.genruntimeconfig.cache
+D:\.projects\Housing Market Simulation\obj\Debug\net10.0\ref\Housing Market Simulation.dll
