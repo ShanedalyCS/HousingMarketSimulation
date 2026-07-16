@@ -29,8 +29,13 @@ public class Market
     {
         for (int i = 0; i < Houses.Count; i++)
         {
+
+            if (i == 0) Console.WriteLine("====== HOUSE DETAILS ======");
+
             House h = Houses[i];
             Console.WriteLine(" Name: " + h.Name + "| Value (k): " + h.value + "| Tech: " + h.technology + "| Age: " + h.age + "| Size: " + h.size);
+
+            if (i == Houses.Count() - 1) Console.WriteLine("====== END OF HOUSES ======");
         }
     }
 }

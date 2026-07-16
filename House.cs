@@ -18,6 +18,8 @@ public class House
         this.age = age;
         this.area = area;
         this.size = size;
+
+        this.quality = technology + age + area + size;
     }
 
     public string Name
@@ -49,10 +51,6 @@ public class House
         get
         {
             return quality;
-        }
-        set
-        {
-            quality = technology + age + area + size;
         }
     }
 

@@ -4,23 +4,18 @@ public class HousingMarketSimulation
 
     public static void Main(string[] args)
     {
-        Console.WriteLine("hello world.");
-
-
-        Buyer bOne = new("Shane Daly", 22, 65, 10, 20, false);
-        Buyer bTwo = new("Clara Aguilar", 22, 50, 5, 12, false);
-        Buyer bThree = new("Dan Theman", 39, 70, 95, 40, true);
-        Buyer bFour = new("Ruth Bababooie", 32, 100, 4, 60, true);
-
-        House houseOne = new("23 Home Street", 230, 6, 8, 5, 1);
-
         Market market = new();
-        market.Buyers.Add(bOne);
-        market.Buyers.Add(bTwo);
-        market.Buyers.Add(bThree);
-        market.Buyers.Add(bFour);
+        DataGenerator dataGenerator = new();
 
-        market.Houses.Add(houseOne);
+        Console.WriteLine("How many people?");
+        int numberOfBuyers = int.Parse(Console.ReadLine()!);
+
+        Console.WriteLine("How many houses?");
+        int numberOfHouses = int.Parse(Console.ReadLine()!);
+
+        dataGenerator.GenerateData(numberOfBuyers, numberOfHouses, market);
+
+
 
         market.LogBuyerDetails();
         market.LogHouseDetails();
