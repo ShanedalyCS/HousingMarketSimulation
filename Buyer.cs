@@ -1,4 +1,4 @@
-class Buyer
+public class Buyer
 {
     private string name;
     public int age;
@@ -87,6 +87,15 @@ class Buyer
         {
             hasFamily = value;
         }
+    }
+
+    public bool CanAfford(House house)
+    {
+        float minimumDeposit = house.value * 0.2f;
+        float maximumMortgage = salary * 4;
+
+        if (savings >= minimumDeposit && maximumMortgage >= house.value) return true;
+        return false;
     }
 
     // to use getters and setters in c# : string name = person.Name; for getters. person.Age = 29; for setters.

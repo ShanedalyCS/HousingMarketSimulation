@@ -1,4 +1,4 @@
-class House
+public class House
 {
     private string name;
 
@@ -10,11 +10,10 @@ class House
     public float area;
     public float size;
 
-    public House(string name, float value, float quality, float technology, float age, float area, float size)
+    public House(string name, float value, float technology, float age, float area, float size)
     {
         this.name = name;
         this.value = value;
-        this.quality = quality;
         this.technology = technology;
         this.age = age;
         this.area = area;
@@ -41,7 +40,7 @@ class House
         }
         set
         {
-            value = value;
+            this.value = value;
         }
     }
 
@@ -53,7 +52,7 @@ class House
         }
         set
         {
-            quality = value;
+            quality = technology + age + area + size;
         }
     }
 

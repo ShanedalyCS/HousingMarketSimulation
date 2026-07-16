@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Housing Market Simulation")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+21fedcd08ebabaa670972f1413d25ba57d7a6bba")]
 [assembly: System.Reflection.AssemblyProductAttribute("Housing Market Simulation")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Housing Market Simulation")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
