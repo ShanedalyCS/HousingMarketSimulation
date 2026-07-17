@@ -34,16 +34,19 @@ public class Simulation
 
     private void CheckAffordableHouses()
     {
-        foreach (Buyer buyer in Market.Buyers)
+
+        int numberOfAfforableBuyers = 0;
+        foreach (House house in Market.Houses)
         {
-            foreach (House house in Market.Houses)
+            foreach (Buyer buyer in Market.Buyers)
             {
                 if (buyer.CanAfford(house))
                 {
-                    Console.WriteLine(
-                        $"{buyer.Name} can afford {house.Name}");
+                    numberOfAfforableBuyers++;
                 }
             }
+            Console.WriteLine(numberOfAfforableBuyers + " Can afford this house.");
+            numberOfAfforableBuyers = 0;
         }
     }
 }
