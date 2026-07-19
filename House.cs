@@ -102,5 +102,10 @@ public class House
         }
     }
 
+    public string PrintAll()
+    {
+        return ("name : " + name);
+    }
+
     // to use getters and setters in c# : string name = person.Name; for getters. person.Age = 29; for setters.
 }

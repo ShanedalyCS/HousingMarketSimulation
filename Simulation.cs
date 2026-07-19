@@ -1,15 +1,10 @@
 using System;
+using System.Diagnostics;
 
-public class Simulation
+public class Simulation(Market market)
 {
-    public Market Market { get; }
-    public int CurrentMonth { get; private set; }
-
-    public Simulation(Market market)
-    {
-        Market = market;
-        CurrentMonth = 0;
-    }
+    public Market Market { get; } = market;
+    public int CurrentMonth { get; private set; } = 0;
 
     public void RunTick()
     {
@@ -19,6 +14,7 @@ public class Simulation
 
         UpdateBuyerFinances();
         CheckAffordableHouses();
+        LogAffordableHouses();
     }
 
     private void UpdateBuyerFinances()
@@ -34,19 +30,35 @@ public class Simulation
 
     private void CheckAffordableHouses()
     {
-
-        int numberOfAfforableBuyers = 0;
-        foreach (House house in Market.Houses)
+        foreach (Buyer buyer in Market.Buyers)
         {
-            foreach (Buyer buyer in Market.Buyers)
+            buyer.AffordableHouses.Clear();
+            foreach (House house in Market.Houses)
             {
                 if (buyer.CanAfford(house))
                 {
-                    numberOfAfforableBuyers++;
+                    buyer.AffordableHouses.Add(house);
                 }
             }
-            Console.WriteLine(numberOfAfforableBuyers + " Can afford this house.");
-            numberOfAfforableBuyers = 0;
         }
     }
+
+
+    public void LogAffordableHouses()
+    {
+        foreach (Buyer buyer in Market.Buyers)
+        {
+            string lineOfAffordableHouses = "";
+            if (buyer.AffordableHouses != null)
+            {
+
+                foreach (House affordableHouse in buyer.AffordableHouses)
+                {
+                    lineOfAffordableHouses += affordableHouse.Name + ", ";
+                }
+                Console.WriteLine(buyer.Name + " can afford " + lineOfAffordableHouses);
+            }
+        }
+    }
+
 }

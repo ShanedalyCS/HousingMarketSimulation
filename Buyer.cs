@@ -7,6 +7,8 @@ public class Buyer
     public float savings;
     public bool hasFamily;
 
+    public List<House> affordableHouses;
+
     public Buyer(string name, int age, float salary, float motivation, float savings, bool hasFamily)
     {
         this.name = name;
@@ -15,6 +17,17 @@ public class Buyer
         this.motivation = motivation;
         this.savings = savings;
         this.hasFamily = hasFamily;
+
+        this.affordableHouses = [];
+    }
+
+    public List<House> AffordableHouses
+    {
+        get
+        {
+            return affordableHouses;
+        }
+
     }
 
     public string Name
