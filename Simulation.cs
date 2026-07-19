@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics;
+using System.IO.Compression;
+using System.Numerics;
 
 public class Simulation(Market market)
 {
@@ -15,6 +17,8 @@ public class Simulation(Market market)
         UpdateBuyerFinances();
         CheckAffordableHouses();
         LogAffordableHouses();
+        FindBestAffordableHouse();
+        MakeAndLogBids();
     }
 
     private void UpdateBuyerFinances()
@@ -49,7 +53,7 @@ public class Simulation(Market market)
         foreach (Buyer buyer in Market.Buyers)
         {
             string lineOfAffordableHouses = "";
-            if (buyer.AffordableHouses != null)
+            if (buyer.AffordableHouses.Count > 0)
             {
 
                 foreach (House affordableHouse in buyer.AffordableHouses)
@@ -61,4 +65,25 @@ public class Simulation(Market market)
         }
     }
 
+    public void FindBestAffordableHouse()
+    {
+        foreach (Buyer buyer in Market.Buyers)
+        {
+            buyer.WinningHouse = buyer.AffordableHouses
+                .OrderByDescending(house => house.Quality)
+                .FirstOrDefault();
+        }
+    }
+
+    public void MakeAndLogBids()
+    {
+        foreach (Buyer buyer in Market.Buyers)
+        {
+            if (buyer.winningHouse != null)
+            {
+                Market.Bids.Add(new Bid(buyer, buyer.winningHouse, buyer.winningHouse.value));
+            }
+        }
+        Market.LogBidDetails();
+    }
 }

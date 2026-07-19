@@ -10,6 +10,10 @@ public class House
     public float area;
     public float size;
 
+    public int numberOfBids;
+
+    public List<Bid> bids;
+
     public House(string name, float value, float technology, float age, float area, float size)
     {
         this.name = name;
@@ -20,6 +24,10 @@ public class House
         this.size = size;
 
         this.quality = technology + age + area + size;
+
+        this.numberOfBids = 0;
+        this.bids = [];
+
     }
 
     public string Name

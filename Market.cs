@@ -1,16 +1,19 @@
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Dynamic;
 using System.Security.Cryptography.X509Certificates;
 
 public class Market
 {
     public List<House> Houses { get; set; }
     public List<Buyer> Buyers { get; set; }
+    public List<Bid> Bids { get; set; }
 
     public Market()
     {
         Houses = new List<House>();
         Buyers = new List<Buyer>();
-
+        Bids = new List<Bid>();
     }
 
     public void LogBuyerDetails()
@@ -38,4 +41,13 @@ public class Market
             if (i == Houses.Count() - 1) Console.WriteLine("====== END OF HOUSES ======");
         }
     }
+
+    public void LogBidDetails()
+    {
+        foreach (Bid bid in Bids)
+        {
+            Console.WriteLine(bid.buyerId + " placed a bid on " + bid.houseId + " for " + bid.offerAmount + " K");
+        }
+    }
+
 }

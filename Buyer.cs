@@ -1,25 +1,15 @@
-public class Buyer
+public class Buyer(string name, int age, float salary, float motivation, float savings, bool hasFamily)
 {
-    private string name;
-    public int age;
-    public float salary;
-    public float motivation;
-    public float savings;
-    public bool hasFamily;
+    private string name = name;
+    public int age = age;
+    public float salary = salary;
+    public float motivation = motivation;
+    public float savings = savings;
+    public bool hasFamily = hasFamily;
 
-    public List<House> affordableHouses;
+    public List<House> affordableHouses = [];
 
-    public Buyer(string name, int age, float salary, float motivation, float savings, bool hasFamily)
-    {
-        this.name = name;
-        this.age = age;
-        this.salary = salary;
-        this.motivation = motivation;
-        this.savings = savings;
-        this.hasFamily = hasFamily;
-
-        this.affordableHouses = [];
-    }
+    public House? winningHouse;
 
     public List<House> AffordableHouses
     {
@@ -28,6 +18,12 @@ public class Buyer
             return affordableHouses;
         }
 
+    }
+
+    public House? WinningHouse
+    {
+        get { return winningHouse; }
+        set { this.winningHouse = value; }
     }
 
     public string Name
@@ -110,6 +106,4 @@ public class Buyer
         if (savings >= minimumDeposit && maximumMortgage >= house.value) return true;
         return false;
     }
-
-    // to use getters and setters in c# : string name = person.Name; for getters. person.Age = 29; for setters.
 }
