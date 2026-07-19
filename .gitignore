@@ -1,0 +1,19 @@
+# .NET build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# VS Code local workspace settings
+.vscode/
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Logs and temporary files
+*.log
+*.tmp
