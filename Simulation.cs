@@ -93,9 +93,14 @@ public class Simulation(Market market)
     {
         foreach (House house in Market.Houses)
         {
-            house.DeliberateBids();
-            Market.RemoveSoldHousesAndBuyersFromMarket();
+            var transaction = house.DeliberateBids();
+            if (transaction != null)
+            {
+                Market.Transactions.Add(transaction);
+            }
         }
+        Market.RemoveSoldHousesAndBuyersFromMarket();
+
     }
 
     public void LogTransactionDetails()

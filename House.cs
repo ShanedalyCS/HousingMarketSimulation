@@ -32,7 +32,7 @@ public class House
 
     }
 
-    public void DeliberateBids()
+    public Transaction? DeliberateBids()
     {
         if (bids != null)
         {
@@ -50,11 +50,13 @@ public class House
                         winningBuyer = bid.buyer;
                     }
                 }
-                Transaction transaction = new(winningBuyer, house, highestBid);
+                return new(winningBuyer, house, highestBid);
+
 
             }
 
         }
+        return null;
     }
 
 
