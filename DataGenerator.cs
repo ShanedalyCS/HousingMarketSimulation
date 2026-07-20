@@ -1,15 +1,5 @@
-using System.Runtime.CompilerServices;
-using System;
-using System.IO;
-using System.Collections.Generic;
-
 public class DataGenerator
 {
-    // int numBuyers
-    // {get; set;}
-    // int numHouses
-    // {get; set;}
-
     List<string> names;
     readonly string path = "first-names.txt";
     Random rnd = new();
@@ -63,9 +53,6 @@ public class DataGenerator
         float savings = salary / 2;
 
         bool hasFamily = true;
-
-        // TODO: create Buyer object and populate fields
-        // name, age, salary, motivation, savings, hasFamily
 
         Buyer buyer = new(name, age, salary, motivation, savings, hasFamily);
 

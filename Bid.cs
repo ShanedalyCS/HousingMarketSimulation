@@ -15,7 +15,6 @@ public class Bid
 
     public void MakeBid(House house)
     {
-        house.numberOfBids++;
         house.bids.Add(this);
     }
 }

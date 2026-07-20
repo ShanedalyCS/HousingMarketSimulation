@@ -100,10 +100,16 @@ public class Buyer(string name, int age, float salary, float motivation, float s
 
     public bool CanAfford(House house)
     {
-        float minimumDeposit = house.value * 0.2f;
-        float maximumMortgage = salary * 4;
+        return house.Value <= CalculateMaximumPurchasePrice();
+    }
 
-        if (savings >= minimumDeposit && maximumMortgage >= house.value) return true;
-        return false;
+    public float CalculateMaximumPurchasePrice()
+    {
+        const float depositRate = 0.20f;
+        float maximumPriceFromDeposit = Savings / depositRate;
+        float maximumMortgage = Salary * 4f;
+        float maximumPriceFromMortgage = maximumMortgage / (1f - depositRate);
+
+        return MathF.Min(maximumPriceFromDeposit, maximumPriceFromMortgage);
     }
 }

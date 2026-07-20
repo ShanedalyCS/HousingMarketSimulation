@@ -1,8 +1,3 @@
-using System;
-using System.Diagnostics;
-using System.IO.Compression;
-using System.Numerics;
-
 public class Simulation(Market market)
 {
     public Market Market { get; } = market;
@@ -12,15 +7,26 @@ public class Simulation(Market market)
     {
         CurrentMonth++;
         Console.WriteLine($"\n===== MONTH {CurrentMonth} =====");
-        Market.Bids.Clear();
+        
+        ClearMonthlyBiddingState();
 
         UpdateBuyerFinances();
         CheckAffordableHouses();
         LogAffordableHouses();
         FindBestAffordableHouse();
         MakeAndLogBids();
-        DeliberateBids();
-        LogTransactionDetails();
+        List<Transaction> completedTransactions = DeliberateBids();
+        Market.LogTransactionDetails(completedTransactions);
+    }
+
+    private void ClearMonthlyBiddingState()
+    {
+        Market.Bids.Clear();
+
+        foreach (House house in Market.Houses)
+        {
+            house.bids.Clear();
+        }
     }
 
     private void UpdateBuyerFinances()
@@ -83,28 +89,35 @@ public class Simulation(Market market)
         {
             if (buyer.winningHouse != null)
             {
-                Market.Bids.Add(new Bid(buyer, buyer.winningHouse, buyer.winningHouse.value));
+                House house = buyer.winningHouse;
+                float motivationPremium = house.Value * (buyer.Motivation / 100f);
+                float offerAmount = MathF.Min(
+                    house.Value + motivationPremium,
+                    buyer.CalculateMaximumPurchasePrice());
+
+                Market.Bids.Add(new Bid(buyer, house, offerAmount));
             }
         }
         Market.LogBidDetails();
     }
 
-    public void DeliberateBids()
+    public List<Transaction> DeliberateBids()
     {
+        List<Transaction> completedTransactions = [];
+        HashSet<Buyer> successfulBuyers = [];
+
         foreach (House house in Market.Houses)
         {
-            var transaction = house.DeliberateBids();
-            if (transaction != null)
+            Transaction? transaction = house.DeliberateBids();
+            if (transaction != null && successfulBuyers.Add(transaction.Buyer))
             {
-                Market.Transactions.Add(transaction);
+                completedTransactions.Add(transaction);
             }
         }
-        Market.RemoveSoldHousesAndBuyersFromMarket();
 
-    }
+        Market.Transactions.AddRange(completedTransactions);
+        Market.RemoveSoldHousesAndBuyersFromMarket(completedTransactions);
 
-    public void LogTransactionDetails()
-    {
-        Market.LogTransactionDetails();
+        return completedTransactions;
     }
 }

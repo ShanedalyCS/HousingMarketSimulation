@@ -1,8 +1,3 @@
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Dynamic;
-using System.Security.Cryptography.X509Certificates;
-
 public class Market
 {
     public List<House> Houses { get; set; }
@@ -52,26 +47,20 @@ public class Market
         }
     }
 
-    public void LogTransactionDetails()
+    public void LogTransactionDetails(IEnumerable<Transaction> transactions)
     {
-        if (Transactions != null)
+        foreach (Transaction transaction in transactions)
         {
-            foreach (Transaction transaction in Transactions)
-            {
-                Console.WriteLine("TRANSACTION : " + transaction.Buyer.Name + " bought " + transaction.House.Name + " for " + transaction.SalePrice + " K");
-            }
+            Console.WriteLine("TRANSACTION : " + transaction.Buyer.Name + " bought " + transaction.House.Name + " for " + transaction.SalePrice + " K");
         }
     }
 
-    public void RemoveSoldHousesAndBuyersFromMarket()
+    public void RemoveSoldHousesAndBuyersFromMarket(IEnumerable<Transaction> transactions)
     {
-        foreach (Transaction transaction in Transactions)
+        foreach (Transaction transaction in transactions)
         {
-            if (Houses.Contains(transaction.House))
-            {
-                Houses.Remove(transaction.House);
-                Buyers.Remove(transaction.Buyer);
-            }
+            Houses.Remove(transaction.House);
+            Buyers.Remove(transaction.Buyer);
         }
     }
 

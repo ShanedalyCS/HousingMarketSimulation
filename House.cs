@@ -1,5 +1,3 @@
-using System.IO.Compression;
-
 public class House
 {
     private string name;
@@ -11,8 +9,6 @@ public class House
     public float age;
     public float area;
     public float size;
-
-    public int numberOfBids;
 
     public List<Bid> bids;
 
@@ -27,36 +23,26 @@ public class House
 
         this.quality = technology + age + area + size;
 
-        this.numberOfBids = 0;
         this.bids = [];
 
     }
 
     public Transaction? DeliberateBids()
     {
-        if (bids != null)
+        if (bids.Count == 0)
         {
-            if (bids.Count > 1)
-            {
-                float highestBid = 0;
-                Buyer? winningBuyer = null;
-                House? house = null;
-                foreach (Bid bid in bids)
-                {
-                    house = bid.house;
-                    if (bid.offerAmount > highestBid)
-                    {
-                        highestBid = bid.offerAmount;
-                        winningBuyer = bid.buyer;
-                    }
-                }
-                return new(winningBuyer, house, highestBid);
-
-
-            }
-
+            return null;
         }
-        return null;
+
+        float highestOffer = bids.Max(bid => bid.offerAmount);
+        List<Bid> highestBids = bids
+            .Where(bid => bid.offerAmount == highestOffer)
+            .ToList();
+
+        // An equal-top-bid tie is settled by a lottery, so list order gives no buyer priority.
+        Bid winningBid = highestBids[Random.Shared.Next(highestBids.Count)];
+
+        return new Transaction(winningBid.buyer, this, winningBid.offerAmount);
     }
 
 
