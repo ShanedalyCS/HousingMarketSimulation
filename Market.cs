@@ -4,6 +4,7 @@ public class Market
     public List<Buyer> Buyers { get; set; }
     public List<Bid> Bids { get; set; }
     public List<Transaction> Transactions { get; set; }
+    public List<MonthlyMarketReport> MonthlyReports { get; set; }
 
     public Market()
     {
@@ -11,6 +12,7 @@ public class Market
         Buyers = new List<Buyer>();
         Bids = new List<Bid>();
         Transactions = new List<Transaction>();
+        MonthlyReports = new List<MonthlyMarketReport>();
     }
 
     public void LogBuyerDetails()

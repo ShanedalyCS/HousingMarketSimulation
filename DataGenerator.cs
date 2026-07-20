@@ -3,6 +3,7 @@ public class DataGenerator
     List<string> names;
     readonly string path = "first-names.txt";
     Random rnd = new();
+    int nextHouseId;
 
     public DataGenerator()
     {
@@ -18,7 +19,11 @@ public class DataGenerator
         }
     }
 
-    public String GenerateData(int numBuyers, int numHouses, Market market)
+    public String GenerateData(
+        int numBuyers,
+        int numHouses,
+        Market market,
+        bool startHousePricesAtZero = false)
     {
         for (int i = 0; i < numBuyers; i++)
         {
@@ -27,12 +32,28 @@ public class DataGenerator
 
         for (int i = 0; i < numHouses; i++)
         {
-            int TEMP_NAME_VAR = i;
-            GenerateHouse(TEMP_NAME_VAR, market);
+            GenerateHouse(market, startHousePricesAtZero);
         }
 
 
         return "Data Generated";
+    }
+
+    public void AddMonthlyEntrants(
+        Market market,
+        int numberOfBuyers,
+        int numberOfHouses,
+        bool startHousePricesAtZero = false)
+    {
+        for (int i = 0; i < numberOfBuyers; i++)
+        {
+            GenerateBuyer(market);
+        }
+
+        for (int i = 0; i < numberOfHouses; i++)
+        {
+            GenerateHouse(market, startHousePricesAtZero);
+        }
     }
 
     private void GenerateBuyer(Market market)
@@ -60,7 +81,7 @@ public class DataGenerator
 
     }
 
-    private void GenerateHouse(int TEMP_NAME_VAR, Market market)
+    private void GenerateHouse(Market market, bool startPriceAtZero)
     {
         float technology = rnd.Next(-3, 10);
         float age = rnd.Next(-3, 10);
@@ -71,10 +92,11 @@ public class DataGenerator
         float value = (technology + age + area + size) * 8;
 
         if (value <= 0) value = 30;
+        if (startPriceAtZero) value = 0;
 
 
-        //string name, float value, float technology, float age, float area, float size)
-        House house = new(TEMP_NAME_VAR.ToString(), value, technology, age, area, size);
+        House house = new(nextHouseId.ToString(), value, technology, age, area, size);
+        nextHouseId++;
 
         market.Houses.Add(house);
     }

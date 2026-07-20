@@ -12,14 +12,21 @@ public class HousingMarketSimulation
         Console.WriteLine("How many houses?");
         int numberOfHouses = int.Parse(Console.ReadLine()!);
 
-        dataGenerator.GenerateData(numberOfBuyers, numberOfHouses, market);
+        Console.WriteLine("Use zero-price market discovery mode? (y/n)");
+        bool usePriceDiscoveryMode = Console.ReadLine()?.Trim().ToLowerInvariant() == "y";
+
+        dataGenerator.GenerateData(
+            numberOfBuyers,
+            numberOfHouses,
+            market,
+            usePriceDiscoveryMode);
 
 
 
         market.LogBuyerDetails();
         market.LogHouseDetails();
 
-        Simulation simulation = new(market);
+        Simulation simulation = new(market, dataGenerator, usePriceDiscoveryMode);
 
         Console.WriteLine("How many months so simulate?");
         int numberOfTicks = int.Parse(Console.ReadLine()!);

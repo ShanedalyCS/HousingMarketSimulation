@@ -35,6 +35,14 @@ public class House
         }
 
         float highestOffer = bids.Max(bid => bid.offerAmount);
+
+        if (highestOffer < Value)
+        {
+            Console.WriteLine(
+                $"{Name} rejected all bids and remains on the market at {Value:F2} K");
+            return null;
+        }
+
         List<Bid> highestBids = bids
             .Where(bid => bid.offerAmount == highestOffer)
             .ToList();
@@ -43,6 +51,11 @@ public class House
         Bid winningBid = highestBids[Random.Shared.Next(highestBids.Count)];
 
         return new Transaction(winningBid.buyer, this, winningBid.offerAmount);
+    }
+
+    public float CalculateQualityBasedValue()
+    {
+        return MathF.Max(30f, Quality * 8f);
     }
 
 

@@ -1,5 +1,20 @@
-public class Simulation(Market market)
+public class Simulation(
+    Market market,
+    DataGenerator? generator = null,
+    bool usePriceDiscoveryMode = false)
 {
+    private const float UnsoldPriceReductionRate = 0.02f;
+    private const float HighDemandPriceIncreaseRate = 0.02f;
+    private const int HighDemandBidThreshold = 3;
+    private const int NewBuyersPerMonth = 1;
+    private const int NewHousesPerMonth = 1;
+
+    private readonly DataGenerator dataGenerator = generator ?? new DataGenerator();
+    private readonly bool priceDiscoveryMode = usePriceDiscoveryMode;
+    private readonly float startingAverageAskingPrice = market.Houses.Count == 0
+        ? 0
+        : market.Houses.Average(house => house.Value);
+
     public Market Market { get; } = market;
     public int CurrentMonth { get; private set; } = 0;
 
@@ -15,8 +30,102 @@ public class Simulation(Market market)
         LogAffordableHouses();
         FindBestAffordableHouse();
         MakeAndLogBids();
+        (int priceReductions, int priceIncreases) = AdjustHousePrices();
+        float averageEstablishedAskingPrice = CalculateAverageEstablishedAskingPrice();
         List<Transaction> completedTransactions = DeliberateBids();
         Market.LogTransactionDetails(completedTransactions);
+        AddMonthlyEntrants();
+        RecordMonthlyReport(
+            completedTransactions,
+            priceReductions,
+            priceIncreases,
+            averageEstablishedAskingPrice);
+    }
+
+    private (int PriceReductions, int PriceIncreases) AdjustHousePrices()
+    {
+        int priceReductions = 0;
+        int priceIncreases = 0;
+
+        foreach (House house in Market.Houses)
+        {
+            if (house.bids.Count == 0 && house.Value > 0)
+            {
+                house.Value = MathF.Round(house.Value * (1f - UnsoldPriceReductionRate), 2);
+                priceReductions++;
+            }
+            else if (house.bids.Count >= HighDemandBidThreshold)
+            {
+                if (priceDiscoveryMode && house.Value == 0)
+                {
+                    house.Value = MathF.Round(
+                        house.bids.Average(bid => bid.offerAmount), 2);
+                }
+                else
+                {
+                    house.Value = MathF.Round(
+                        house.Value * (1f + HighDemandPriceIncreaseRate), 2);
+                }
+
+                priceIncreases++;
+            }
+        }
+
+        return (priceReductions, priceIncreases);
+    }
+
+    private float CalculateAverageEstablishedAskingPrice()
+    {
+        List<House> pricedHouses = Market.Houses
+            .Where(house => house.Value > 0)
+            .ToList();
+
+        return pricedHouses.Count == 0
+            ? 0
+            : pricedHouses.Average(house => house.Value);
+    }
+
+    private void AddMonthlyEntrants()
+    {
+        dataGenerator.AddMonthlyEntrants(
+            Market,
+            NewBuyersPerMonth,
+            NewHousesPerMonth,
+            priceDiscoveryMode);
+    }
+
+    private void RecordMonthlyReport(
+        List<Transaction> completedTransactions,
+        int priceReductions,
+        int priceIncreases,
+        float averageAskingPrice)
+    {
+        float averageSalePrice = completedTransactions.Count == 0
+            ? 0
+            : completedTransactions.Average(transaction => transaction.SalePrice);
+        float askingPriceChange = averageAskingPrice - startingAverageAskingPrice;
+        float askingPricePercentageChange = startingAverageAskingPrice == 0
+            ? 0
+            : askingPriceChange / startingAverageAskingPrice * 100f;
+
+        MonthlyMarketReport report = new(
+            CurrentMonth,
+            Market.Bids.Count,
+            completedTransactions.Count,
+            averageSalePrice,
+            priceReductions,
+            priceIncreases,
+            NewBuyersPerMonth,
+            NewHousesPerMonth,
+            Market.Buyers.Count,
+            Market.Houses.Count,
+            averageAskingPrice,
+            startingAverageAskingPrice,
+            askingPriceChange,
+            askingPricePercentageChange);
+
+        Market.MonthlyReports.Add(report);
+        report.Print();
     }
 
     private void ClearMonthlyBiddingState()
@@ -90,9 +199,12 @@ public class Simulation(Market market)
             if (buyer.winningHouse != null)
             {
                 House house = buyer.winningHouse;
-                float motivationPremium = house.Value * (buyer.Motivation / 100f);
+                float startingOffer = priceDiscoveryMode && house.Value == 0
+                    ? house.CalculateQualityBasedValue()
+                    : house.Value;
+                float motivationPremium = startingOffer * (buyer.Motivation / 100f);
                 float offerAmount = MathF.Min(
-                    house.Value + motivationPremium,
+                    startingOffer + motivationPremium,
                     buyer.CalculateMaximumPurchasePrice());
 
                 Market.Bids.Add(new Bid(buyer, house, offerAmount));
@@ -108,6 +220,20 @@ public class Simulation(Market market)
 
         foreach (House house in Market.Houses)
         {
+            if (priceDiscoveryMode
+                && house.Value == 0
+                && house.bids.Count < HighDemandBidThreshold)
+            {
+                if (house.bids.Count > 0)
+                {
+                    Console.WriteLine(
+                        $"{house.Name} rejected all bids because price discovery requires " +
+                        $"{HighDemandBidThreshold} bids");
+                }
+
+                continue;
+            }
+
             Transaction? transaction = house.DeliberateBids();
             if (transaction != null && successfulBuyers.Add(transaction.Buyer))
             {
