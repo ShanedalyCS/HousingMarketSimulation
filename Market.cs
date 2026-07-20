@@ -8,12 +8,14 @@ public class Market
     public List<House> Houses { get; set; }
     public List<Buyer> Buyers { get; set; }
     public List<Bid> Bids { get; set; }
+    public List<Transaction> Transactions { get; set; }
 
     public Market()
     {
         Houses = new List<House>();
         Buyers = new List<Buyer>();
         Bids = new List<Bid>();
+        Transactions = new List<Transaction>();
     }
 
     public void LogBuyerDetails()
@@ -46,7 +48,30 @@ public class Market
     {
         foreach (Bid bid in Bids)
         {
-            Console.WriteLine(bid.buyerId + " placed a bid on " + bid.houseId + " for " + bid.offerAmount + " K");
+            Console.WriteLine(bid.buyer.Name + " placed a bid on " + bid.house.Name + " for " + bid.offerAmount + " K");
+        }
+    }
+
+    public void LogTransactionDetails()
+    {
+        if (Transactions != null)
+        {
+            foreach (Transaction transaction in Transactions)
+            {
+                Console.WriteLine("TRANSACTION : " + transaction.Buyer.Name + " bought " + transaction.House.Name + " for " + transaction.SalePrice + " K");
+            }
+        }
+    }
+
+    public void RemoveSoldHousesAndBuyersFromMarket()
+    {
+        foreach (Transaction transaction in Transactions)
+        {
+            if (Houses.Contains(transaction.House))
+            {
+                Houses.Remove(transaction.House);
+                Buyers.Remove(transaction.Buyer);
+            }
         }
     }
 

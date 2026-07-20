@@ -1,13 +1,13 @@
 public class Bid
 {
-    public string houseId;
-    public string buyerId;
+    public House house;
+    public Buyer buyer;
     public float offerAmount;
 
     public Bid(Buyer buyer, House house, float offerAmount)
     {
-        this.houseId = house.Name;
-        this.buyerId = buyer.Name;
+        this.house = house;
+        this.buyer = buyer;
         this.offerAmount = offerAmount;
 
         MakeBid(house);

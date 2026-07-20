@@ -1,3 +1,5 @@
+using System.IO.Compression;
+
 public class House
 {
     private string name;
@@ -29,6 +31,32 @@ public class House
         this.bids = [];
 
     }
+
+    public void DeliberateBids()
+    {
+        if (bids != null)
+        {
+            if (bids.Count > 1)
+            {
+                float highestBid = 0;
+                Buyer? winningBuyer = null;
+                House? house = null;
+                foreach (Bid bid in bids)
+                {
+                    house = bid.house;
+                    if (bid.offerAmount > highestBid)
+                    {
+                        highestBid = bid.offerAmount;
+                        winningBuyer = bid.buyer;
+                    }
+                }
+                Transaction transaction = new(winningBuyer, house, highestBid);
+
+            }
+
+        }
+    }
+
 
     public string Name
     {

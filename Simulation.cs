@@ -11,14 +11,16 @@ public class Simulation(Market market)
     public void RunTick()
     {
         CurrentMonth++;
-
         Console.WriteLine($"\n===== MONTH {CurrentMonth} =====");
+        Market.Bids.Clear();
 
         UpdateBuyerFinances();
         CheckAffordableHouses();
         LogAffordableHouses();
         FindBestAffordableHouse();
         MakeAndLogBids();
+        DeliberateBids();
+        LogTransactionDetails();
     }
 
     private void UpdateBuyerFinances()
@@ -85,5 +87,19 @@ public class Simulation(Market market)
             }
         }
         Market.LogBidDetails();
+    }
+
+    public void DeliberateBids()
+    {
+        foreach (House house in Market.Houses)
+        {
+            house.DeliberateBids();
+            Market.RemoveSoldHousesAndBuyersFromMarket();
+        }
+    }
+
+    public void LogTransactionDetails()
+    {
+        Market.LogTransactionDetails();
     }
 }
