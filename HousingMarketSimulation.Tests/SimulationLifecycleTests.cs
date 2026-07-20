@@ -28,7 +28,7 @@ public class SimulationLifecycleTests
         Assert.Equal(1, report.HousesActiveDuringMonth);
         Assert.Equal(0, report.BuyersRemaining);
         Assert.Equal(1, report.HousesRemaining);
-        Assert.Equal(98f, report.AverageAskingPrice);
+        Assert.Equal(98f, report.AverageAskingPriceDuringMonth);
         Assert.Single(market.Buyers);
         Assert.Equal(2, market.Houses.Count);
     }

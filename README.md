@@ -19,7 +19,7 @@ Each month runs in this order:
 9. Record and print the end-of-month report.
 10. Add one buyer and one house that can participate starting next month.
 
-The report's remaining-buyer count, remaining-house count, and average asking price all use the same end-of-month snapshot before new entrants are added. Its active counts describe the buyers and houses that participated during that completed month.
+The report is recorded before new entrants are added. Its active counts describe the buyers and houses that participated during the completed month. Average asking price uses those same active houses, including a sold house's final asking price and any end-of-month reduction applied to an unsold house. Remaining counts describe the inventory left after transactions.
 
 ## Normal and price-discovery modes
 

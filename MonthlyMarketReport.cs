@@ -9,7 +9,7 @@ public class MonthlyMarketReport(
     int priceDiscoveries,
     int buyersRemaining,
     int housesRemaining,
-    float averageAskingPrice,
+    float averageAskingPriceDuringMonth,
     float averageSalePrice,
     float startingAverageAskingPrice,
     float askingPriceChange,
@@ -25,7 +25,7 @@ public class MonthlyMarketReport(
     public int PriceDiscoveries { get; } = priceDiscoveries;
     public int BuyersRemaining { get; } = buyersRemaining;
     public int HousesRemaining { get; } = housesRemaining;
-    public float AverageAskingPrice { get; } = averageAskingPrice;
+    public float AverageAskingPriceDuringMonth { get; } = averageAskingPriceDuringMonth;
     public float AverageSalePrice { get; } = averageSalePrice;
     public float StartingAverageAskingPrice { get; } = startingAverageAskingPrice;
     public float AskingPriceChange { get; } = askingPriceChange;
@@ -39,7 +39,7 @@ public class MonthlyMarketReport(
         Console.WriteLine($"Transactions completed: {TransactionsCompleted}");
         Console.WriteLine($"Price reductions / increases / discoveries: {PriceReductions} / {PriceIncreases} / {PriceDiscoveries}");
         Console.WriteLine($"Buyers / houses remaining: {BuyersRemaining} / {HousesRemaining}");
-        Console.WriteLine($"Average asking price: {AverageAskingPrice:F2} K");
+        Console.WriteLine($"Average asking price of houses active this month: {AverageAskingPriceDuringMonth:F2} K");
         Console.WriteLine($"Average sale price: {AverageSalePrice:F2} K");
 
         string direction = AskingPriceChange > 0

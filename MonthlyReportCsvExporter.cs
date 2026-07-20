@@ -9,7 +9,7 @@ public static class MonthlyReportCsvExporter
         csv.AppendLine(
             "Month,BuyersActiveDuringMonth,HousesActiveDuringMonth,BidsPlaced," +
             "TransactionsCompleted,PriceReductions,PriceIncreases,PriceDiscoveries," +
-            "BuyersRemaining,HousesRemaining,AverageAskingPrice,AverageSalePrice," +
+            "BuyersRemaining,HousesRemaining,AverageAskingPriceDuringMonth,AverageSalePrice," +
             "StartingAverageAskingPrice,AskingPriceChange,AskingPricePercentageChange");
 
         foreach (MonthlyMarketReport report in reports)
@@ -26,7 +26,7 @@ public static class MonthlyReportCsvExporter
                 report.PriceDiscoveries.ToString(CultureInfo.InvariantCulture),
                 report.BuyersRemaining.ToString(CultureInfo.InvariantCulture),
                 report.HousesRemaining.ToString(CultureInfo.InvariantCulture),
-                report.AverageAskingPrice.ToString(CultureInfo.InvariantCulture),
+                report.AverageAskingPriceDuringMonth.ToString(CultureInfo.InvariantCulture),
                 report.AverageSalePrice.ToString(CultureInfo.InvariantCulture),
                 report.StartingAverageAskingPrice.ToString(CultureInfo.InvariantCulture),
                 report.AskingPriceChange.ToString(CultureInfo.InvariantCulture),

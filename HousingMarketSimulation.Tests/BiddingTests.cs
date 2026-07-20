@@ -41,7 +41,9 @@ public class BiddingTests
         Transaction transaction = Assert.Single(market.Transactions);
         Assert.Equal(100f, transaction.SalePrice);
         Assert.DoesNotContain(house, market.Houses);
-        Assert.Equal(0, Assert.Single(market.MonthlyReports).PriceIncreases);
+        MonthlyMarketReport report = Assert.Single(market.MonthlyReports);
+        Assert.Equal(0, report.PriceIncreases);
+        Assert.Equal(100f, report.AverageAskingPriceDuringMonth);
     }
 
     [Fact]

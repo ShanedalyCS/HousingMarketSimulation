@@ -16,7 +16,7 @@ public class CsvExporterTests
             priceDiscoveries: 0,
             buyersRemaining: 1,
             housesRemaining: 2,
-            averageAskingPrice: 98.5f,
+            averageAskingPriceDuringMonth: 98.5f,
             averageSalePrice: 101.25f,
             startingAverageAskingPrice: 100,
             askingPriceChange: -1.5f,
@@ -29,7 +29,7 @@ public class CsvExporterTests
             string[] lines = File.ReadAllLines(filePath);
 
             Assert.Equal(2, lines.Length);
-            Assert.Contains("AverageAskingPrice", lines[0]);
+            Assert.Contains("AverageAskingPriceDuringMonth", lines[0]);
             Assert.Contains("98.5,101.25", lines[1]);
             Assert.DoesNotContain(98.5f.ToString(new CultureInfo("de-DE")), lines[1]);
         }

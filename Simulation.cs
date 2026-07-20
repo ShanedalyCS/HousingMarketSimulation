@@ -25,7 +25,7 @@ public class Simulation(
         ClearMonthlyBiddingState();
 
         int buyersActiveThisMonth = Market.Buyers.Count;
-        int housesActiveThisMonth = Market.Houses.Count;
+        List<House> housesActiveThisMonth = [.. Market.Houses];
 
         UpdateBuyerFinances();
         CheckAffordableHouses();
@@ -37,13 +37,15 @@ public class Simulation(
         Market.LogTransactionDetails(completedTransactions);
 
         (int priceReductions, int priceIncreases) = AdjustPricesForRemainingHouses();
+        float averageAskingPriceDuringMonth = CalculateAverageAskingPrice(housesActiveThisMonth);
         RecordMonthlyReport(
             buyersActiveThisMonth,
-            housesActiveThisMonth,
+            housesActiveThisMonth.Count,
             completedTransactions,
             priceReductions,
             priceIncreases,
-            priceDiscoveries);
+            priceDiscoveries,
+            averageAskingPriceDuringMonth);
 
         AddMonthlyEntrants();
     }
@@ -206,13 +208,13 @@ public class Simulation(
         List<Transaction> completedTransactions,
         int priceReductions,
         int priceIncreases,
-        int priceDiscoveries)
+        int priceDiscoveries,
+        float averageAskingPriceDuringMonth)
     {
         float averageSalePrice = completedTransactions.Count == 0
             ? 0
             : completedTransactions.Average(transaction => transaction.SalePrice);
-        float averageAskingPrice = CalculateAverageAskingPrice(Market.Houses);
-        float askingPriceChange = averageAskingPrice - startingAverageAskingPrice;
+        float askingPriceChange = averageAskingPriceDuringMonth - startingAverageAskingPrice;
         float askingPricePercentageChange = startingAverageAskingPrice == 0
             ? 0
             : askingPriceChange / startingAverageAskingPrice * 100f;
@@ -228,7 +230,7 @@ public class Simulation(
             priceDiscoveries,
             Market.Buyers.Count,
             Market.Houses.Count,
-            averageAskingPrice,
+            averageAskingPriceDuringMonth,
             averageSalePrice,
             startingAverageAskingPrice,
             askingPriceChange,
