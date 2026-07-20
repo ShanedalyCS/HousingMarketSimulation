@@ -1,14 +1,13 @@
 public class DataGenerator
 {
-    List<string> names;
-    readonly string path = "first-names.txt";
-    Random rnd = new();
-    int nextHouseId;
+    private readonly List<string> names = [];
+    private readonly Random random;
+    private int nextHouseId;
 
-    public DataGenerator()
+    public DataGenerator(Random? random = null)
     {
-        names = new List<string>();
-
+        this.random = random ?? new Random();
+        const string path = "first-names.txt";
 
         if (File.Exists(path))
         {
@@ -19,7 +18,7 @@ public class DataGenerator
         }
     }
 
-    public String GenerateData(
+    public void GenerateData(
         int numBuyers,
         int numHouses,
         Market market,
@@ -34,9 +33,6 @@ public class DataGenerator
         {
             GenerateHouse(market, startHousePricesAtZero);
         }
-
-
-        return "Data Generated";
     }
 
     public void AddMonthlyEntrants(
@@ -56,20 +52,19 @@ public class DataGenerator
         }
     }
 
+    public Random Random => random;
+
     private void GenerateBuyer(Market market)
     {
         string name = "Unknown";
-        if (names != null && names.Count > 0)
+        if (names.Count > 0)
         {
-            var rnd = new Random();
-            name = names[rnd.Next(names.Count)];
+            name = names[random.Next(names.Count)];
         }
 
-        int age = rnd.Next(70);
-
-        float salary = rnd.Next(30, 200);
-
-        float motivation = rnd.Next(10);
+        int age = random.Next(70);
+        float salary = random.Next(30, 200);
+        float motivation = random.Next(10);
 
         float savings = salary / 2;
 
@@ -83,10 +78,10 @@ public class DataGenerator
 
     private void GenerateHouse(Market market, bool startPriceAtZero)
     {
-        float technology = rnd.Next(-3, 10);
-        float age = rnd.Next(-3, 10);
-        float area = rnd.Next(-3, 10);
-        float size = rnd.Next(-3, 10);
+        float technology = random.Next(-3, 10);
+        float age = random.Next(-3, 10);
+        float area = random.Next(-3, 10);
+        float size = random.Next(-3, 10);
 
 
         float value = (technology + age + area + size) * 8;

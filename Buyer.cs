@@ -107,9 +107,8 @@ public class Buyer(string name, int age, float salary, float motivation, float s
     {
         const float depositRate = 0.20f;
         float maximumPriceFromDeposit = Savings / depositRate;
-        float maximumMortgage = Salary * 4f;
-        float maximumPriceFromMortgage = maximumMortgage / (1f - depositRate);
+        float maximumPriceFromTotalFunds = Savings + Salary * 4f;
 
-        return MathF.Min(maximumPriceFromDeposit, maximumPriceFromMortgage);
+        return MathF.Min(maximumPriceFromDeposit, maximumPriceFromTotalFunds);
     }
 }

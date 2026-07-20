@@ -27,7 +27,7 @@ public class House
 
     }
 
-    public Transaction? DeliberateBids()
+    public Transaction? DeliberateBids(Random random)
     {
         if (bids.Count == 0)
         {
@@ -48,7 +48,7 @@ public class House
             .ToList();
 
         // An equal-top-bid tie is settled by a lottery, so list order gives no buyer priority.
-        Bid winningBid = highestBids[Random.Shared.Next(highestBids.Count)];
+        Bid winningBid = highestBids[random.Next(highestBids.Count)];
 
         return new Transaction(winningBid.buyer, this, winningBid.offerAmount);
     }
