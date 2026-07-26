@@ -50,6 +50,8 @@ real-world housing-policy conclusions.
 - Stable invariant-culture CSV and nullable JSON exports.
 - Responsive, accessible SVG visualisation using dependency-free HTML, CSS, and
   vanilla JavaScript.
+- A native Windows Forms dashboard that advances the real C# simulation one
+  month at a time and redraws charts live.
 - xUnit regression and 120-month scenario testing.
 - GitHub Actions CI/CD and automated static-site deployment.
 
@@ -145,9 +147,51 @@ Requires the .NET 10 SDK. From the repository root:
 ```powershell
 dotnet test HousingMarketSimulation.slnx
 dotnet run --project src/HousingMarketSimulation
+dotnet run --project src/HousingMarketSimulation.Desktop
 dotnet run --project src/HousingMarketSimulation -- --scenarios
 dotnet run --project src/HousingMarketSimulation -- --dashboard
 ```
+
+### Live desktop dashboard
+
+On Windows, run:
+
+```powershell
+dotnet run --project src/HousingMarketSimulation.Desktop
+```
+
+![Live desktop simulation dashboard](docs/assets/live-dashboard-preview.png)
+
+Enter initial buyers, initial houses, duration, seed, and monthly buyer/house
+inflows. Then:
+
+- **Start** advances the simulation automatically at the selected speed.
+- **Pause** stops after the current monthly tick.
+- **Step one month** advances exactly one tick for closer inspection.
+- **Reset** unlocks the inputs and creates a fresh deterministic session.
+
+Choose **Instant · no delay** to run ticks back-to-back while still yielding to
+the Windows message loop between months so the dashboard can repaint and Pause
+remains responsive. Nine KPI cards and five chart views update after every
+tick. Each time-series chart's x-axis expands to the latest completed month, so
+a run at month 10 ends at M10 and a long run continues scaling through M1200
+rather than reserving the configured duration in advance. The **Supply vs
+price** view is a scatter chart with active house listings on the x-axis and
+average completed sale price on the y-axis. Each point represents a simulated
+month with at least one sale; months without a transaction are omitted rather
+than displayed as a zero price.
+The **Supply & demand** view compares active buyers with the houses available at
+the start of each month's trading. Ending inventory remains available in the
+analytics exports but is omitted from this view because it is simply the
+post-transaction, pre-new-listing balance for the same month. Houses on market
+use a dashed gold line so both series remain visible when their values coincide.
+The top cards show both the current month's average asking and completed sale
+prices. **Sale / asking** is the average transaction sale price divided by that
+house's asking price at sale time; 100% means it sold at asking, while a value
+above 100% reflects competing qualifying bids.
+
+The desktop app uses `LiveSimulationSession`, which delegates directly to the
+existing `Simulation.RunTick()` method; it does not reimplement market logic.
 
 Interactive mode asks for initial counts, duration, an optional seed, and
 simulation settings. It writes:
@@ -180,7 +224,7 @@ static site. `dashboard.html` is an identical compatibility copy.
 
 ## Testing and reproducibility
 
-The verified suite contains **74 passing xUnit tests**. Coverage includes:
+The verified suite contains **79 passing xUnit tests**. Coverage includes:
 
 - transaction timestamps and auction settlement;
 - affordability, preferences, valuation, and seller feedback;
@@ -190,6 +234,8 @@ The verified suite contains **74 passing xUnit tests**. Coverage includes:
 - composition-bias regression cases;
 - CSV/JSON schemas, null handling, and deterministic exports;
 - dashboard generation and Pages entry-point parity;
+- live-session tick boundaries, completion, validation, and deterministic
+  replay;
 - reproducible 120-month balanced, excess-demand, and excess-supply scenarios.
 
 Supplying the same seed and settings reproduces generated agents, property
@@ -210,6 +256,9 @@ src/HousingMarketSimulation/
   Reporting/       CSV and JSON exporters
   Services/        bidding, valuation, pricing, and buyer decisions
   Simulation/      market lifecycle, scenarios, and data generation
+src/HousingMarketSimulation.Desktop/
+  LiveDashboardForm.cs   Windows Forms controls and simulation timer
+  LiveLineChart.cs       dependency-free live chart rendering
 tests/HousingMarketSimulation.Tests/
 docs/assets/
 ```
