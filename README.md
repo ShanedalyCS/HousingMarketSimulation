@@ -170,9 +170,15 @@ inflows. Then:
 - **Step one month** advances exactly one tick for closer inspection.
 - **Reset** unlocks the inputs and creates a fresh deterministic session.
 
-Eight KPI cards and four chart views update after every tick. The desktop app
-uses `LiveSimulationSession`, which delegates directly to the existing
-`Simulation.RunTick()` method; it does not reimplement market logic.
+Choose **Instant · no delay** to run ticks back-to-back while still yielding to
+the Windows message loop between months so the dashboard can repaint and Pause
+remains responsive. Eight KPI cards and four chart views update after every
+tick. Each chart's x-axis expands to the latest completed month, so a run at
+month 10 ends at M10 and a long run continues scaling through M1200 rather than
+reserving the configured duration in advance.
+
+The desktop app uses `LiveSimulationSession`, which delegates directly to the
+existing `Simulation.RunTick()` method; it does not reimplement market logic.
 
 Interactive mode asks for initial counts, duration, an optional seed, and
 simulation settings. It writes:

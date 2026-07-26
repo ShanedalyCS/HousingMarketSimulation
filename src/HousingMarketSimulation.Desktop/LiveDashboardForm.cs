@@ -48,6 +48,7 @@ public sealed class LiveDashboardForm : Form
     };
 
     private LiveSimulationSession? session;
+    private bool isRunning;
 
     public LiveDashboardForm()
     {
@@ -69,7 +70,11 @@ public sealed class LiveDashboardForm : Form
         stepButton.Click += (_, _) => StepOneMonth();
         resetButton.Click += (_, _) => ResetSession();
         speedInput.SelectedIndexChanged += (_, _) => ApplySelectedSpeed();
-        FormClosing += (_, _) => timer.Stop();
+        FormClosing += (_, _) =>
+        {
+            isRunning = false;
+            timer.Stop();
+        };
         ResetView();
     }
 
@@ -308,21 +313,23 @@ public sealed class LiveDashboardForm : Form
     private void ConfigureSpeedInput()
     {
         speedInput.DropDownStyle = ComboBoxStyle.DropDownList;
-        speedInput.Width = 126;
+        speedInput.Width = 145;
+        speedInput.AccessibleName = "Simulation speed";
         speedInput.BackColor = Color.FromArgb(31, 33, 38);
         speedInput.ForeColor = TextColor;
         speedInput.Items.AddRange(
         [
             new SimulationSpeed("Slow · 1.0 s", 1000),
             new SimulationSpeed("Normal · 0.5 s", 500),
-            new SimulationSpeed("Fast · 0.15 s", 150)
+            new SimulationSpeed("Fast · 0.15 s", 150),
+            new SimulationSpeed("Instant · no delay", 0)
         ]);
         speedInput.SelectedIndex = 1;
     }
 
-    private void ToggleRunning()
+    private async void ToggleRunning()
     {
-        if (timer.Enabled)
+        if (isRunning)
         {
             Pause("Paused. Use Start to continue or Step for one month.");
             return;
@@ -334,10 +341,19 @@ public sealed class LiveDashboardForm : Form
             statusLabel.Text = "Simulation complete. Reset to configure another run.";
             return;
         }
-        ApplySelectedSpeed();
-        timer.Start();
+        isRunning = true;
+        speedInput.Enabled = false;
         startPauseButton.Text = "Pause";
         statusLabel.Text = "Running… charts update after every simulated month.";
+        if (SelectedSpeed().IntervalMilliseconds == 0)
+        {
+            await RunInstantLoopAsync();
+        }
+        else
+        {
+            ApplySelectedSpeed();
+            timer.Start();
+        }
     }
 
     private void StepOneMonth()
@@ -395,11 +411,10 @@ public sealed class LiveDashboardForm : Form
 
         IReadOnlyList<MonthlyAnalyticsSnapshot> snapshots =
             session.Market.AnalyticsSnapshots;
-        int months = session.Configuration.DurationMonths;
-        priceChart.UpdateData(snapshots, months);
-        qualityChart.UpdateData(snapshots, months);
-        supplyChart.UpdateData(snapshots, months);
-        activityChart.UpdateData(snapshots, months);
+        priceChart.UpdateData(snapshots);
+        qualityChart.UpdateData(snapshots);
+        supplyChart.UpdateData(snapshots);
+        activityChart.UpdateData(snapshots);
 
         if (latest is not null)
         {
@@ -413,6 +428,8 @@ public sealed class LiveDashboardForm : Form
     private void CompleteSession()
     {
         timer.Stop();
+        isRunning = false;
+        speedInput.Enabled = true;
         startPauseButton.Text = "Start";
         if (session is not null)
         {
@@ -425,6 +442,8 @@ public sealed class LiveDashboardForm : Form
     private void Pause(string message)
     {
         timer.Stop();
+        isRunning = false;
+        speedInput.Enabled = true;
         startPauseButton.Text = "Start";
         statusLabel.Text = message;
     }
@@ -432,6 +451,7 @@ public sealed class LiveDashboardForm : Form
     private void ResetSession()
     {
         timer.Stop();
+        isRunning = false;
         session = null;
         startPauseButton.Text = "Start";
         SetConfigurationEnabled(true);
@@ -446,17 +466,31 @@ public sealed class LiveDashboardForm : Form
         foreach (Label value in kpiValues.Values) value.Text = "—";
         SetKpi("Month", $"0 / {monthsInput.Value:0}");
         statusLabel.Text = "Configure the market, then press Start or Step one month.";
-        priceChart.UpdateData([], Decimal.ToInt32(monthsInput.Value));
-        qualityChart.UpdateData([], Decimal.ToInt32(monthsInput.Value));
-        supplyChart.UpdateData([], Decimal.ToInt32(monthsInput.Value));
-        activityChart.UpdateData([], Decimal.ToInt32(monthsInput.Value));
+        priceChart.UpdateData([]);
+        qualityChart.UpdateData([]);
+        supplyChart.UpdateData([]);
+        activityChart.UpdateData([]);
     }
 
     private void ApplySelectedSpeed()
     {
-        if (speedInput.SelectedItem is SimulationSpeed speed)
+        SimulationSpeed speed = SelectedSpeed();
+        if (speed.IntervalMilliseconds > 0)
             timer.Interval = speed.IntervalMilliseconds;
     }
+
+    private async Task RunInstantLoopAsync()
+    {
+        while (isRunning && session is { IsComplete: false })
+        {
+            AdvanceOneMonth();
+            await Task.Yield();
+        }
+    }
+
+    private SimulationSpeed SelectedSpeed() =>
+        speedInput.SelectedItem as SimulationSpeed
+        ?? throw new InvalidOperationException("A simulation speed must be selected.");
 
     private void SetConfigurationEnabled(bool enabled)
     {

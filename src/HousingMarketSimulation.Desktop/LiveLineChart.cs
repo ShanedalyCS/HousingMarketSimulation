@@ -12,7 +12,7 @@ internal sealed class LiveLineChart : Control
     private readonly ToolTip tooltip = new();
     private IReadOnlyList<MonthlyAnalyticsSnapshot> snapshots = [];
     private IReadOnlyList<LiveChartSeries> series = [];
-    private int expectedMonths = 1;
+    private int latestMonth = 1;
     private int lastTooltipMonth = -1;
     private readonly string chartTitle;
     private readonly string valueUnit;
@@ -35,12 +35,10 @@ internal sealed class LiveLineChart : Control
         Invalidate();
     }
 
-    public void UpdateData(
-        IReadOnlyList<MonthlyAnalyticsSnapshot> monthlySnapshots,
-        int totalMonths)
+    public void UpdateData(IReadOnlyList<MonthlyAnalyticsSnapshot> monthlySnapshots)
     {
         snapshots = monthlySnapshots;
-        expectedMonths = Math.Max(1, totalMonths);
+        latestMonth = Math.Max(1, snapshots.LastOrDefault()?.Month ?? 1);
         lastTooltipMonth = -1;
         Invalidate();
     }
@@ -118,9 +116,9 @@ internal sealed class LiveLineChart : Control
 
         float relative = Math.Clamp((e.X - plot.Left) / plot.Width, 0, 1);
         int month = Math.Clamp(
-            (int)MathF.Round(1 + relative * (expectedMonths - 1)),
+            (int)MathF.Round(1 + relative * (latestMonth - 1)),
             1,
-            expectedMonths);
+            latestMonth);
         MonthlyAnalyticsSnapshot? snapshot = snapshots
             .OrderBy(item => Math.Abs(item.Month - month))
             .FirstOrDefault();
@@ -208,14 +206,14 @@ internal sealed class LiveLineChart : Control
         int[] months =
         [
             1,
-            Math.Max(1, expectedMonths / 2),
-            expectedMonths
+            Math.Max(1, latestMonth / 2),
+            latestMonth
         ];
         foreach (int month in months.Distinct())
         {
-            float x = expectedMonths == 1
+            float x = latestMonth == 1
                 ? plot.Left
-                : plot.Left + (month - 1f) / (expectedMonths - 1f) * plot.Width;
+                : plot.Left + (month - 1f) / (latestMonth - 1f) * plot.Width;
             string label = $"M{month}";
             SizeF size = graphics.MeasureString(label, Font);
             graphics.DrawString(
@@ -250,10 +248,10 @@ internal sealed class LiveLineChart : Control
                 segment.Clear();
                 continue;
             }
-            float x = expectedMonths == 1
+            float x = latestMonth == 1
                 ? plot.Left
                 : plot.Left
-                    + (snapshot.Month - 1f) / (expectedMonths - 1f) * plot.Width;
+                    + (snapshot.Month - 1f) / (latestMonth - 1f) * plot.Width;
             float y = plot.Bottom
                 - (value.Value - minimum) / (maximum - minimum) * plot.Height;
             segment.Add(new PointF(x, y));
