@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Housing Market Simulation · Market Analytics</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #030303;
+      --panel: rgba(17, 18, 22, .62);
+      --panel-strong: rgba(15, 16, 20, .82);
+      --border: rgba(255, 255, 255, .12);
+      --border-highlight: rgba(255, 255, 255, .20);
+      --text: #f5f7fb;
+      --muted: #a5adbb;
+      --accent: #62ead5;
+      --accent-2: #8aa9ff;
+      --warning: #f4c66a;
+      --danger: #f18f9d;
+      --grid: rgba(255, 255, 255, .10);
+      --shadow: 0 24px 70px rgba(0, 0, 0, .46);
+      --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, .08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 78% -8%, rgba(98, 234, 213, .13), transparent 32rem),
+        radial-gradient(circle at -8% 22%, rgba(138, 169, 255, .12), transparent 34rem),
+        var(--bg);
+      background-attachment: fixed;
+      color: var(--text);
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255, 255, 255, .018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .018) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .65), transparent 72%);
+    }
+    button, select, input { font: inherit; }
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(1560px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 64px;
+    }
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: start;
+      margin-bottom: 22px;
+    }
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      font-size: 12px;
+      font-weight: 750;
+    }
+    h1 { margin: 4px 0 4px; font-size: clamp(28px, 4vw, 48px); line-height: 1.08; }
+    h2 { margin: 0; font-size: 19px; }
+    h3 { margin: 0; font-size: 15px; }
+    p { margin: 0; }
+    .subtitle { color: var(--muted); max-width: 760px; }
+    .control-panel {
+      min-width: 310px;
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--glass-highlight), var(--shadow);
+      backdrop-filter: blur(24px) saturate(130%);
+      -webkit-backdrop-filter: blur(24px) saturate(130%);
+    }
+    .control-row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+    .control-row label { color: var(--muted); white-space: nowrap; }
+    select, .button {
+      color: var(--text);
+      background: rgba(255, 255, 255, .055);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+    select option { color: var(--text); background: #111216; }
+    select { width: 100%; }
+    .button { cursor: pointer; transition: border-color .18s, background .18s, transform .18s; }
+    .button:hover {
+      border-color: rgba(98, 234, 213, .65);
+      background: rgba(98, 234, 213, .09);
+      transform: translateY(-1px);
+    }
+    .toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--muted); }
+    .toggle input { accent-color: var(--accent); }
+    .scenario-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0 22px;
+    }
+    .chip {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .045);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      font-size: 13px;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .kpi {
+      min-height: 110px;
+      padding: 16px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .018)),
+        var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--glass-highlight), 0 18px 42px rgba(0, 0, 0, .32);
+      backdrop-filter: blur(20px) saturate(125%);
+      -webkit-backdrop-filter: blur(20px) saturate(125%);
+    }
+    .kpi-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .07em; }
+    .kpi-value { margin-top: 7px; font-size: clamp(22px, 2.4vw, 31px); font-weight: 760; letter-spacing: -.03em; }
+    .kpi-note { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card {
+      min-width: 0;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, .035), transparent 42%),
+        var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: var(--glass-highlight), var(--shadow);
+      backdrop-filter: blur(24px) saturate(125%);
+      -webkit-backdrop-filter: blur(24px) saturate(125%);
+    }
+    .card.wide { grid-column: 1 / -1; }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .card-copy { color: var(--muted); font-size: 13px; max-width: 760px; margin-top: 4px; }
+    .series-controls { display: flex; flex-wrap: wrap; gap: 7px; margin: 10px 0 2px; }
+    .series-controls label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .series-controls input { accent-color: var(--accent-2); }
+    .chart { width: 100%; min-height: 315px; position: relative; }
+    .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .legend button {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 4px 7px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .legend button:hover { border-color: var(--border); }
+    .legend button.off { opacity: .38; text-decoration: line-through; }
+    .swatch { width: 16px; height: 3px; border-radius: 2px; }
+    .empty {
+      height: 285px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, .16);
+    }
+    .explanation {
+      grid-column: 1 / -1;
+      border-left: 3px solid var(--accent);
+      background:
+        linear-gradient(90deg, rgba(98, 234, 213, .10), transparent 55%),
+        var(--panel);
+    }
+    .explanation strong { color: var(--accent); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: right; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+    th:first-child, td:first-child { text-align: left; }
+    tbody tr:hover { background: rgba(138, 169, 255, .07); }
+    .tooltip {
+      position: fixed;
+      z-index: 10;
+      pointer-events: none;
+      opacity: 0;
+      max-width: 270px;
+      color: var(--text);
+      background: rgba(12, 13, 16, .86);
+      border: 1px solid var(--border-highlight);
+      border-radius: 12px;
+      padding: 9px 11px;
+      box-shadow: var(--glass-highlight), 0 18px 42px rgba(0, 0, 0, .55);
+      backdrop-filter: blur(18px) saturate(130%);
+      -webkit-backdrop-filter: blur(18px) saturate(130%);
+      font-size: 12px;
+      transition: opacity .08s;
+    }
+    .tooltip strong { display: block; margin-bottom: 4px; }
+    .tooltip-row { display: flex; justify-content: space-between; gap: 18px; }
+    .axis-label { fill: var(--muted); font-size: 10px; }
+    .axis-title { fill: var(--muted); font-size: 11px; font-weight: 650; }
+    .grid-line { stroke: var(--grid); stroke-width: 1; }
+    .axis-line { stroke: rgba(255, 255, 255, .26); stroke-width: 1; }
+    .footer { color: var(--muted); text-align: center; font-size: 12px; margin-top: 24px; }
+    @media (max-width: 1050px) {
+      .topbar { grid-template-columns: 1fr; }
+      .control-panel { min-width: 0; }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 18px, 1560px); padding-top: 18px; }
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .card.wide, .explanation { grid-column: auto; }
+      .kpi-grid { grid-template-columns: 1fr; }
+      .chart { min-height: 260px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Market Analytics · Constant Quality</div>
+        <h1 id="project-title">Housing Market Simulation</h1>
+        <p class="subtitle">An offline, reproducible view of price formation, affordability, liquidity, and property-mix effects across simulated market conditions.</p>
+      </div>
+      <div class="control-panel" aria-label="Scenario controls">
+        <label for="scenario-select" class="eyebrow">Selected scenario</label>
+        <div class="control-row">
+          <select id="scenario-select"></select>
+        </div>
+        <div class="control-row">
+          <label class="toggle"><input id="compare-all" type="checkbox"> Compare scenarios on main index chart</label>
+        </div>
+        <div class="control-row">
+          <button class="button" id="reset-charts" type="button">Reset chart selections</button>
+        </div>
+      </div>
+    </header>
+
+    <div id="scenario-meta" class="scenario-meta"></div>
+    <section id="kpi-grid" class="kpi-grid" aria-label="Key performance indicators"></section>
+
+    <main class="dashboard-grid">
+      <section class="card wide">
+        <div class="card-header">
+          <div>
+            <h2>Quality-adjusted price index</h2>
+            <p class="card-copy">Trailing 12-month median sale-price-to-BaseValue factor, independently rebased to 100 when enough evidence first exists.</p>
+          </div>
+        </div>
+        <div id="location-series-controls" class="series-controls"></div>
+        <div id="quality-index-chart" class="chart"></div>
+      </section>
+
+      <aside class="card explanation">
+        <h2>Why raw averages can mislead</h2>
+        <p class="card-copy"><strong>Raw average prices can change because the types of houses sold or remaining change.</strong> The constant-quality index controls for this by comparing each sale price with the house’s fundamental <code>BaseValue</code>. It is a simulation-specific benchmark, not an official hedonic index.</p>
+      </aside>
+
+      <section class="card wide">
+        <div class="card-header">
+          <div>
+            <h2>Raw prices versus quality-adjusted movement</h2>
+            <p class="card-copy">Currency prices use the left axis; index points use the right axis. Gaps mean insufficient transactions, never a fabricated zero.</p>
+          </div>
+        </div>
+        <div id="raw-price-chart" class="chart"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header"><div><h2>Supply and demand</h2><p class="card-copy">Active buyers and listings are stocks; the ratio uses the right axis.</p></div></div>
+        <div id="supply-demand-chart" class="chart"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header"><div><h2>Market activity</h2><p class="card-copy">Bids and completed transactions are monthly flows; clearance is transactions per active listing.</p></div></div>
+        <div id="market-activity-chart" class="chart"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header"><div><h2>Liquidity</h2><p class="card-copy">Months of supply is ending inventory divided by current-month transactions and is unavailable in zero-sale months.</p></div></div>
+        <div id="liquidity-chart" class="chart"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header"><div><h2>Scenario comparison</h2><p class="card-copy">All scenarios are independently rebased, so their index paths compare quality-adjusted pressure rather than currency levels.</p></div></div>
+        <div id="scenario-comparison-chart" class="chart"></div>
+      </section>
+
+      <section class="card wide">
+        <div class="card-header"><div><h2>Location analysis</h2><p class="card-copy">Scenario-wide completed-sale evidence by location segment.</p></div></div>
+        <div id="location-analysis" class="table-wrap"></div>
+      </section>
+    </main>
+
+    <p class="footer">Generated locally from deterministic simulation output · no network connection required</p>
+  </div>
+
+  <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
+  <script id="dashboard-data" type="application/json">__DASHBOARD_DATA__</script>
+  <script>
+    "use strict";
+    const dashboardData = JSON.parse(document.getElementById("dashboard-data").textContent);
+    const palette = ["#66d9c8", "#7aa2f7", "#f4c66a", "#f18f9d", "#b39df3", "#91d06b", "#e69a66"];
+    const state = {
+      scenarioId: dashboardData.scenarios[0]?.id,
+      compareAll: false,
+      locations: new Set(),
+      hiddenSeries: new Set()
+    };
+    const tooltip = document.getElementById("tooltip");
+    const scenarioSelect = document.getElementById("scenario-select");
+    const compareAll = document.getElementById("compare-all");
+    const resetButton = document.getElementById("reset-charts");
+    const locationLabels = { low: "Low", average: "Average", high: "High", prime: "Prime" };
+
+    document.getElementById("project-title").textContent = dashboardData.projectTitle;
+    dashboardData.scenarios.forEach(scenario => {
+      const option = document.createElement("option");
+      option.value = scenario.id;
+      option.textContent = scenario.name;
+      scenarioSelect.append(option);
+    });
+    scenarioSelect.value = state.scenarioId;
+    scenarioSelect.addEventListener("change", () => {
+      state.scenarioId = scenarioSelect.value;
+      render();
+    });
+    compareAll.addEventListener("change", () => {
+      state.compareAll = compareAll.checked;
+      renderCharts();
+    });
+    resetButton.addEventListener("click", () => {
+      state.compareAll = false;
+      state.locations.clear();
+      state.hiddenSeries.clear();
+      compareAll.checked = false;
+      render();
+    });
+    window.addEventListener("resize", debounce(renderCharts, 120));
+
+    function selectedScenario() {
+      return dashboardData.scenarios.find(s => s.id === state.scenarioId) || dashboardData.scenarios[0];
+    }
+
+    function render() {
+      const scenario = selectedScenario();
+      renderMeta(scenario);
+      renderKpis(scenario);
+      renderLocationControls();
+      renderCharts();
+      renderLocationTable(scenario);
+    }
+
+    function renderMeta(scenario) {
+      const values = [
+        ["Scenario", scenario.name],
+        ["Seed", scenario.seed ?? "Random"],
+        ["Duration", `${scenario.durationMonths} months`],
+        ["Initial market", `${scenario.initialBuyers} buyers · ${scenario.initialHouses} houses`],
+        ["Monthly inflow", `${scenario.newBuyersPerMonth} buyers · ${scenario.newHousesPerMonth} houses`]
+      ];
+      const root = document.getElementById("scenario-meta");
+      root.replaceChildren(...values.map(([label, value]) => {
+        const item = document.createElement("span");
+        item.className = "chip";
+        item.textContent = `${label}: ${value}`;
+        return item;
+      }));
+    }
+
+    function renderKpis(scenario) {
+      const snapshots = scenario.monthlyAnalytics;
+      const indexValues = snapshots.map(x => x.constantQualityPriceIndex).filter(isNumber);
+      const indexChange = indexValues.length > 1 ? (last(indexValues) / indexValues[0] - 1) : null;
+      const latest = last(snapshots);
+      const cards = [
+        ["Constant-quality index change", formatPercent(indexChange), "First valid baseline to latest"],
+        ["Raw asking-price change", formatPercent(scenario.summary.askingPricePercentageChange / 100), "Starting to ending inventory"],
+        ["Total transactions", formatInteger(scenario.summary.totalTransactions), `${scenario.durationMonths}-month total`],
+        ["Ending inventory", formatInteger(scenario.summary.finalInventory), "Post-simulation active listings"],
+        ["Final buyer/listing ratio", formatNumber(latest?.buyerToListingRatio, 2), "Active demand per listing"],
+        ["Average sale/list ratio", formatPercent(scenario.summary.averageSaleToListRatio), "All completed sales"],
+        ["Average time on market", formatNumber(scenario.summary.averageTimeOnMarket, 2, " months"), "All completed sales"],
+        ["Total transaction value", formatCurrency(scenario.summary.totalTransactionValue), "Values shown in thousands"]
+      ];
+      document.getElementById("kpi-grid").replaceChildren(...cards.map(([label, value, note]) => {
+        const card = document.createElement("article");
+        card.className = "kpi";
+        card.innerHTML = `<div class="kpi-label"></div><div class="kpi-value"></div><div class="kpi-note"></div>`;
+        card.children[0].textContent = label;
+        card.children[1].textContent = value;
+        card.children[2].textContent = note;
+        return card;
+      }));
+    }
+
+    function renderLocationControls() {
+      const root = document.getElementById("location-series-controls");
+      root.replaceChildren(...Object.entries(locationLabels).map(([key, label]) => {
+        const wrapper = document.createElement("label");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = state.locations.has(key);
+        checkbox.addEventListener("change", () => {
+          checkbox.checked ? state.locations.add(key) : state.locations.delete(key);
+          renderCharts();
+        });
+        wrapper.append(checkbox, document.createTextNode(`${label} location index`));
+        return wrapper;
+      }));
+    }
+
+    function renderCharts() {
+      const scenario = selectedScenario();
+      if (!scenario) return;
+      const points = scenario.monthlyAnalytics;
+
+      const qualitySeries = state.compareAll
+        ? dashboardData.scenarios.map((item, index) => series(
+            `${item.name} · overall`, palette[index], item.monthlyAnalytics, "constantQualityPriceIndex"))
+        : [
+            series("Overall index", palette[0], points, "constantQualityPriceIndex"),
+            ...[...state.locations].map((location, index) => ({
+              name: `${locationLabels[location]} location`,
+              color: palette[index + 1],
+              axis: "left",
+              values: points.map(snapshot => ({
+                x: snapshot.month,
+                y: snapshot.locationAnalytics.find(item => item.location === location)?.constantQualityPriceIndex ?? null
+              }))
+            }))
+          ];
+      qualitySeries.push({
+        name: "Baseline 100",
+        color: "#65738d",
+        axis: "left",
+        dash: true,
+        values: points.map(snapshot => ({ x: snapshot.month, y: 100 }))
+      });
+      renderLineChart("quality-index-chart", qualitySeries, {
+        leftTitle: "Index points",
+        leftFormat: value => formatNumber(value, 1),
+        ariaLabel: "Quality-adjusted price indices over time"
+      });
+
+      renderLineChart("raw-price-chart", [
+        series("Average asking price", palette[1], points, "rawAverageAskingPrice", "left"),
+        series("Average sale price", palette[2], points, "rawAverageSalePrice", "left"),
+        series("Constant-quality index", palette[0], points, "constantQualityPriceIndex", "right")
+      ], {
+        leftTitle: "Price (K)",
+        rightTitle: "Index points",
+        leftFormat: value => `${formatNumber(value, 0)} K`,
+        rightFormat: value => formatNumber(value, 1),
+        ariaLabel: "Raw asking and sale prices compared with quality-adjusted index"
+      });
+
+      renderLineChart("supply-demand-chart", [
+        series("Active buyers", palette[1], points, "activeBuyers"),
+        series("Active listings", palette[0], points, "activeListings"),
+        series("Buyer/listing ratio", palette[2], points, "buyerToListingRatio", "right")
+      ], {
+        leftTitle: "Agents / listings",
+        rightTitle: "Ratio",
+        leftFormat: value => formatNumber(value, 0),
+        rightFormat: value => formatNumber(value, 2),
+        ariaLabel: "Active buyers, active listings, and buyer-to-listing ratio"
+      });
+
+      renderLineChart("market-activity-chart", [
+        series("Bids", palette[1], points, "bidsSubmitted"),
+        series("Transactions", palette[0], points, "transactions"),
+        series("Clearance rate", palette[3], points, "clearanceRate", "right")
+      ], {
+        leftTitle: "Monthly count",
+        rightTitle: "Clearance",
+        leftFormat: value => formatNumber(value, 0),
+        rightFormat: value => formatPercent(value),
+        ariaLabel: "Bids, transactions, and clearance rate"
+      });
+
+      renderLineChart("liquidity-chart", [
+        series("Average time on market", palette[1], points, "averageTimeOnMarket"),
+        series("Months of supply", palette[2], points, "monthsOfSupply"),
+        series("Sale/list ratio", palette[0], points, "averageSaleToListRatio", "right")
+      ], {
+        leftTitle: "Months",
+        rightTitle: "Sale/list",
+        leftFormat: value => formatNumber(value, 1),
+        rightFormat: value => formatPercent(value),
+        ariaLabel: "Time on market, months of supply, and sale-to-list ratio"
+      });
+
+      renderLineChart("scenario-comparison-chart",
+        dashboardData.scenarios.map((item, index) =>
+          series(item.name, palette[index], item.monthlyAnalytics, "constantQualityPriceIndex")),
+        {
+          leftTitle: "Index points",
+          leftFormat: value => formatNumber(value, 1),
+          ariaLabel: "Quality-adjusted price index comparison across scenarios"
+        });
+    }
+
+    function renderLocationTable(scenario) {
+      const root = document.getElementById("location-analysis");
+      const table = document.createElement("table");
+      table.innerHTML = `<thead><tr>
+        <th>Location</th><th>Latest index</th><th>Transactions</th>
+        <th>Median sale price</th><th>Avg. time on market</th><th>Avg. sale/list</th>
+      </tr></thead><tbody></tbody>`;
+      const body = table.querySelector("tbody");
+      scenario.locationAnalytics.forEach(item => {
+        const row = document.createElement("tr");
+        [
+          locationLabels[item.location] || item.location,
+          formatNumber(item.constantQualityPriceIndex, 1),
+          formatInteger(item.transactions),
+          formatCurrency(item.medianSalePrice),
+          formatNumber(item.averageTimeOnMarket, 2, " months"),
+          formatPercent(item.averageSaleToListRatio)
+        ].forEach(value => {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.append(cell);
+        });
+        body.append(row);
+      });
+      root.replaceChildren(table);
+    }
+
+    function series(name, color, snapshots, key, axis = "left") {
+      return { name, color, axis, values: snapshots.map(item => ({ x: item.month, y: item[key] })) };
+    }
+
+    function renderLineChart(containerId, allSeries, options) {
+      const container = document.getElementById(containerId);
+      const width = Math.max(500, container.clientWidth || 700);
+      const height = 310;
+      const margin = { top: 20, right: options.rightTitle ? 66 : 24, bottom: 45, left: 66 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+      const visible = allSeries.filter(item => !state.hiddenSeries.has(`${containerId}:${item.name}`));
+      const finitePoints = visible.flatMap(item => item.values.filter(point => isNumber(point.y)));
+      if (!finitePoints.length) {
+        container.innerHTML = `<div class="empty">No data is available for this selection.</div>`;
+        return;
+      }
+
+      const xValues = allSeries.flatMap(item => item.values.map(point => point.x));
+      const xMin = Math.min(...xValues);
+      const xMax = Math.max(...xValues);
+      const leftDomain = domainFor(visible.filter(item => item.axis !== "right"));
+      const rightDomain = domainFor(visible.filter(item => item.axis === "right"));
+      const xScale = value => margin.left + ((value - xMin) / Math.max(1, xMax - xMin)) * plotWidth;
+      const yScale = (value, axis) => {
+        const domain = axis === "right" ? rightDomain : leftDomain;
+        return margin.top + plotHeight - ((value - domain[0]) / Math.max(.000001, domain[1] - domain[0])) * plotHeight;
+      };
+
+      const svg = createSvg("svg", {
+        viewBox: `0 0 ${width} ${height}`,
+        role: "img",
+        "aria-label": options.ariaLabel
+      });
+      const ticks = 5;
+      for (let index = 0; index <= ticks; index++) {
+        const y = margin.top + plotHeight * index / ticks;
+        svg.append(createSvg("line", { x1: margin.left, y1: y, x2: width - margin.right, y2: y, class: "grid-line" }));
+        const leftValue = leftDomain[1] - (leftDomain[1] - leftDomain[0]) * index / ticks;
+        svg.append(textNode(margin.left - 8, y + 3, options.leftFormat(leftValue), "axis-label", "end"));
+        if (options.rightTitle && rightDomain) {
+          const rightValue = rightDomain[1] - (rightDomain[1] - rightDomain[0]) * index / ticks;
+          svg.append(textNode(width - margin.right + 8, y + 3, options.rightFormat(rightValue), "axis-label", "start"));
+        }
+      }
+      svg.append(createSvg("line", { x1: margin.left, y1: margin.top + plotHeight, x2: width - margin.right, y2: margin.top + plotHeight, class: "axis-line" }));
+      const xTicks = Math.min(6, Math.max(2, xMax - xMin));
+      for (let index = 0; index <= xTicks; index++) {
+        const month = Math.round(xMin + (xMax - xMin) * index / xTicks);
+        const x = xScale(month);
+        svg.append(textNode(x, height - 21, `M${month}`, "axis-label", "middle"));
+      }
+      svg.append(textNode(width / 2, height - 3, "Simulation month", "axis-title", "middle"));
+      const leftTitle = textNode(13, margin.top + plotHeight / 2, options.leftTitle, "axis-title", "middle");
+      leftTitle.setAttribute("transform", `rotate(-90 13 ${margin.top + plotHeight / 2})`);
+      svg.append(leftTitle);
+      if (options.rightTitle) {
+        const rightTitle = textNode(width - 10, margin.top + plotHeight / 2, options.rightTitle, "axis-title", "middle");
+        rightTitle.setAttribute("transform", `rotate(90 ${width - 10} ${margin.top + plotHeight / 2})`);
+        svg.append(rightTitle);
+      }
+
+      visible.forEach(item => {
+        const path = createSvg("path", {
+          d: buildPath(item.values, xScale, value => yScale(value, item.axis)),
+          fill: "none",
+          stroke: item.color,
+          "stroke-width": item.dash ? 1.5 : 2.2,
+          "stroke-dasharray": item.dash ? "6 6" : "",
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round"
+        });
+        svg.append(path);
+      });
+
+      const overlay = createSvg("rect", {
+        x: margin.left, y: margin.top, width: plotWidth, height: plotHeight,
+        fill: "transparent", tabindex: "0"
+      });
+      overlay.addEventListener("mousemove", event => showChartTooltip(event, visible, xMin, xMax));
+      overlay.addEventListener("mouseleave", hideTooltip);
+      overlay.addEventListener("blur", hideTooltip);
+      svg.append(overlay);
+
+      const legend = document.createElement("div");
+      legend.className = "legend";
+      allSeries.forEach(item => {
+        const key = `${containerId}:${item.name}`;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = state.hiddenSeries.has(key) ? "off" : "";
+        button.innerHTML = `<span class="swatch"></span><span></span>`;
+        button.querySelector(".swatch").style.background = item.color;
+        button.querySelector("span:last-child").textContent = item.name;
+        button.addEventListener("click", () => {
+          state.hiddenSeries.has(key) ? state.hiddenSeries.delete(key) : state.hiddenSeries.add(key);
+          renderCharts();
+        });
+        legend.append(button);
+      });
+      container.replaceChildren(svg, legend);
+    }
+
+    function domainFor(seriesItems) {
+      const values = seriesItems.flatMap(item => item.values.map(point => point.y).filter(isNumber));
+      if (!values.length) return [0, 1];
+      let min = Math.min(...values);
+      let max = Math.max(...values);
+      const spread = max - min || Math.max(Math.abs(max) * .1, 1);
+      min -= spread * .1;
+      max += spread * .1;
+      if (min > 0 && min < spread * .35) min = 0;
+      return [min, max];
+    }
+
+    function buildPath(values, xScale, yScale) {
+      let path = "";
+      let drawing = false;
+      values.forEach(point => {
+        if (!isNumber(point.y)) {
+          drawing = false;
+          return;
+        }
+        path += `${drawing ? "L" : "M"}${xScale(point.x).toFixed(2)},${yScale(point.y).toFixed(2)} `;
+        drawing = true;
+      });
+      return path.trim();
+    }
+
+    function showChartTooltip(event, seriesItems, xMin, xMax) {
+      const bounds = event.currentTarget.getBoundingClientRect();
+      const relative = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width));
+      const month = Math.round(xMin + (xMax - xMin) * relative);
+      const rows = seriesItems.map(item => {
+        const point = item.values.find(value => value.x === month);
+        return point && isNumber(point.y)
+          ? `<div class="tooltip-row"><span style="color:${item.color}">${escapeHtml(item.name)}</span><b>${formatNumber(point.y, 3)}</b></div>`
+          : "";
+      }).filter(Boolean).join("");
+      if (!rows) return hideTooltip();
+      tooltip.innerHTML = `<strong>Month ${month}</strong>${rows}`;
+      tooltip.style.left = `${Math.min(window.innerWidth - 285, event.clientX + 14)}px`;
+      tooltip.style.top = `${Math.min(window.innerHeight - 170, event.clientY + 14)}px`;
+      tooltip.style.opacity = "1";
+    }
+
+    function hideTooltip() { tooltip.style.opacity = "0"; }
+    function createSvg(name, attributes) {
+      const element = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      return element;
+    }
+    function textNode(x, y, text, className, anchor) {
+      const node = createSvg("text", { x, y, class: className, "text-anchor": anchor });
+      node.textContent = text;
+      return node;
+    }
+    function isNumber(value) { return typeof value === "number" && Number.isFinite(value); }
+    function last(values) { return values[values.length - 1]; }
+    function formatInteger(value) { return isNumber(value) ? Math.round(value).toLocaleString() : "Unavailable"; }
+    function formatNumber(value, digits = 2, suffix = "") {
+      return isNumber(value) ? `${value.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: Math.min(1, digits) })}${suffix}` : "Unavailable";
+    }
+    function formatPercent(value) { return isNumber(value) ? `${(value * 100).toFixed(2)}%` : "Unavailable"; }
+    function formatCurrency(value) { return isNumber(value) ? `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} K` : "Unavailable"; }
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
+    }
+    function debounce(callback, delay) {
+      let timer;
+      return () => { clearTimeout(timer); timer = setTimeout(callback, delay); };
+    }
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
 <Solution>
-  <Project Path="Housing Market Simulation.csproj" />
-  <Project Path="HousingMarketSimulation.Tests/HousingMarketSimulation.Tests.csproj" />
+  <Project Path="src/HousingMarketSimulation/HousingMarketSimulation.csproj" />
+  <Project Path="tests/HousingMarketSimulation.Tests/HousingMarketSimulation.Tests.csproj" />
 </Solution>

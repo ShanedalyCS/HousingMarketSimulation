@@ -11,7 +11,7 @@ public class MarketFeedbackTests
         Market market = new();
         market.Houses.Add(subject);
         market.Transactions.Add(new Transaction(
-            CreateBuyer(), soldComparable, soldComparable.BaseValue * 1.5f));
+            CreateBuyer(), soldComparable, soldComparable.BaseValue * 1.5f, 1));
 
         new Simulation(
             market,
@@ -43,7 +43,7 @@ public class MarketFeedbackTests
 
         valuation.EstimateMarketValue(
             subject,
-            [new Transaction(CreateBuyer(), comparable, comparable.BaseValue * 1.5f)]);
+            [new Transaction(CreateBuyer(), comparable, comparable.BaseValue * 1.5f, 1)]);
         float after = decisions.Evaluate(buyer, subject).MaximumBid;
 
         Assert.True(after > before);
@@ -66,7 +66,7 @@ public class MarketFeedbackTests
 
         float estimate = valuation.EstimateMarketValue(
             subject,
-            [new Transaction(CreateBuyer(), unrelated, 2000)]);
+            [new Transaction(CreateBuyer(), unrelated, 2000, 1)]);
 
         Assert.Equal(subject.BaseValue, estimate);
     }
@@ -80,7 +80,7 @@ public class MarketFeedbackTests
 
         float estimate = valuation.EstimateMarketValue(
             subject,
-            [new Transaction(CreateBuyer(), comparable, comparable.BaseValue * 10)]);
+            [new Transaction(CreateBuyer(), comparable, comparable.BaseValue * 10, 1)]);
 
         Assert.InRange(estimate / subject.BaseValue, 1f, 1.10f);
     }
@@ -103,7 +103,7 @@ public class MarketFeedbackTests
             new Random(5));
         Market market = new();
         market.Transactions.Add(new Transaction(
-            CreateBuyer(), comparable, comparable.BaseValue * 1.4f));
+            CreateBuyer(), comparable, comparable.BaseValue * 1.4f, 1));
 
         new DataGenerator(new Random(seed)).AddMonthlyEntrants(market, 0, 1);
 

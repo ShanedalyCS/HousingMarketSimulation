@@ -17,6 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Housing Market Simulation.csproj" />
+    <ProjectReference Include="..\..\src\HousingMarketSimulation\HousingMarketSimulation.csproj" />
   </ItemGroup>
 </Project>

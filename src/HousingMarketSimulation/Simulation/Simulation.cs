@@ -5,12 +5,15 @@ public class Simulation
     private readonly BuyerDecisionService buyerDecisionService;
     private readonly AuctionService auctionService;
     private readonly SellerPricingService sellerPricingService;
+    private readonly MarketAnalyticsService analyticsService;
     private readonly float startingAverageAskingPrice;
+    private int newListingsThisMonth;
 
     public Simulation(
         Market market,
         DataGenerator? generator = null,
-        SimulationSettings? settings = null)
+        SimulationSettings? settings = null,
+        AnalyticsSettings? analyticsSettings = null)
     {
         Market = market;
         dataGenerator = generator ?? new DataGenerator();
@@ -19,7 +22,9 @@ public class Simulation
         buyerDecisionService = new BuyerDecisionService(this.settings);
         auctionService = new AuctionService(this.settings);
         sellerPricingService = new SellerPricingService(this.settings);
+        analyticsService = new MarketAnalyticsService(analyticsSettings, this.settings);
         startingAverageAskingPrice = CalculateAverage(market.Houses.Select(house => house.AskingPrice));
+        newListingsThisMonth = market.Houses.Count;
     }
 
     public Market Market { get; }
@@ -31,7 +36,7 @@ public class Simulation
         Console.WriteLine($"\n===== MONTH {CurrentMonth} =====");
 
         ClearMonthlyState();
-        int buyersActiveThisMonth = Market.Buyers.Count;
+        List<Buyer> buyersActiveThisMonth = [.. Market.Buyers];
         List<House> housesActiveThisMonth = [.. Market.Houses];
         Dictionary<House, float> startingAskingPrices = housesActiveThisMonth
             .ToDictionary(house => house, house => house.AskingPrice);
@@ -40,6 +45,9 @@ public class Simulation
         IncrementTimeOnMarket();
         RecalculateEstimatedMarketValues();
         ApplyMarketInformedPricing();
+        AffordabilityObservation affordability = analyticsService.CaptureAffordability(
+            buyersActiveThisMonth,
+            housesActiveThisMonth);
 
         float[] askingPricesAtEvaluation = housesActiveThisMonth
             .Where(house => house.AskingPrice > 0)
@@ -53,9 +61,20 @@ public class Simulation
         AdjustPricesForRemainingHouses();
         PriceMovementSummary priceMovements =
             PriceMovementCounter.CountNetMovements(startingAskingPrices);
+        MonthlyAnalyticsSnapshot analyticsSnapshot = analyticsService.CreateSnapshot(
+            CurrentMonth,
+            newListingsThisMonth,
+            buyersActiveThisMonth,
+            housesActiveThisMonth,
+            Market.Bids.Count,
+            completedTransactions,
+            Market.Houses,
+            Market.Transactions,
+            affordability);
+        Market.AnalyticsSnapshots.Add(analyticsSnapshot);
 
         RecordMonthlyReport(
-            buyersActiveThisMonth,
+            buyersActiveThisMonth.Count,
             housesActiveThisMonth.Count,
             completedTransactions,
             priceMovements.Reductions,
@@ -142,6 +161,7 @@ public class Simulation
             Transaction? transaction = auctionService.Settle(
                 house,
                 dataGenerator.Random,
+                CurrentMonth,
                 successfulBuyers);
             if (transaction is not null) completedTransactions.Add(transaction);
         }
@@ -209,6 +229,7 @@ public class Simulation
             Market,
             settings.NewBuyersPerMonth,
             settings.NewHousesPerMonth);
+        newListingsThisMonth = settings.NewHousesPerMonth;
     }
 
     private static float CalculateAverage(IEnumerable<float> values)

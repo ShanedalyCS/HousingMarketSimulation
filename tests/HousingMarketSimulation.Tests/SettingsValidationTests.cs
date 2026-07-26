@@ -82,4 +82,22 @@ public class SettingsValidationTests
             nameof(ValuationSettings.MaximumComparablePriceRatio),
             exception.ParamName);
     }
+
+    [Fact]
+    public void AnalyticsSettingsRejectInvalidValues()
+    {
+        AnalyticsSettings[] invalidSettings =
+        [
+            new() { PriceIndexWindowMonths = 0 },
+            new() { MinimumOverallTransactions = 0 },
+            new() { MinimumLocationTransactions = 0 },
+            new() { MinimumSaleToBaseRatio = 0 },
+            new() { MinimumSaleToBaseRatio = float.NaN },
+            new() { MaximumSaleToBaseRatio = float.PositiveInfinity },
+            new() { MinimumSaleToBaseRatio = 2, MaximumSaleToBaseRatio = 1 }
+        ];
+
+        Assert.All(invalidSettings, settings =>
+            Assert.ThrowsAny<ArgumentException>(settings.Validate));
+    }
 }

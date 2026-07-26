@@ -7,7 +7,7 @@ public class BiddingTests
         Buyer buyer = CreateBuyer("Buyer");
         _ = new Bid(buyer, house, 105);
 
-        Transaction? transaction = new AuctionService().Settle(house, new Random(1));
+        Transaction? transaction = new AuctionService().Settle(house, new Random(1), 1);
 
         Assert.NotNull(transaction);
         Assert.Same(buyer, transaction.Buyer);
@@ -20,7 +20,7 @@ public class BiddingTests
         House house = TestHouseFactory.Create(100);
         _ = new Bid(CreateBuyer("Buyer"), house, 99);
 
-        Assert.Null(new AuctionService().Settle(house, new Random(1)));
+        Assert.Null(new AuctionService().Settle(house, new Random(1), 1));
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public class BiddingTests
 
         Transaction transaction = new AuctionService(
             new SimulationSettings { AuctionIncrement = 0.5f })
-            .Settle(house, new Random(1))!;
+            .Settle(house, new Random(1), 1)!;
 
         Assert.Same(winner, transaction.Buyer);
         Assert.Equal(104.5f, transaction.SalePrice);
@@ -49,7 +49,7 @@ public class BiddingTests
 
         Transaction transaction = new AuctionService(
             new SimulationSettings { AuctionIncrement = 10 })
-            .Settle(house, new Random(1))!;
+            .Settle(house, new Random(1), 1)!;
 
         Assert.Equal(105, transaction.SalePrice);
     }
@@ -71,8 +71,8 @@ public class BiddingTests
         HashSet<Buyer> successful = [];
         AuctionService service = new();
 
-        Assert.NotNull(service.Settle(first, new Random(1), successful));
-        Assert.Null(service.Settle(second, new Random(1), successful));
+        Assert.NotNull(service.Settle(first, new Random(1), 1, successful));
+        Assert.Null(service.Settle(second, new Random(1), 1, successful));
     }
 
     private static string RunTiedBid(int seed)
@@ -80,7 +80,7 @@ public class BiddingTests
         House house = TestHouseFactory.Create(100);
         _ = new Bid(CreateBuyer("A"), house, 105);
         _ = new Bid(CreateBuyer("B"), house, 105);
-        return new AuctionService().Settle(house, new Random(seed))!.Buyer.Name;
+        return new AuctionService().Settle(house, new Random(seed), 1)!.Buyer.Name;
     }
 
     private static Buyer CreateBuyer(string name) =>
