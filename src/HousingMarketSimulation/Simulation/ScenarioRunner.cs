@@ -1,6 +1,6 @@
 public sealed record SimulationScenario(
     string Name,
-    string FileName,
+    string Id,
     int Seed,
     int InitialBuyers,
     int InitialHouses,
@@ -23,7 +23,10 @@ public sealed record ScenarioRunResult(
     SimulationScenario Scenario,
     ScenarioSummary Summary,
     Market Market,
-    string CsvPath);
+    ScenarioDashboardData DashboardData,
+    string CsvPath,
+    string AnalyticsCsvPath,
+    string DashboardJsonPath);
 
 public static class ScenarioRunner
 {
@@ -33,7 +36,7 @@ public static class ScenarioRunner
     [
         new(
             "Balanced market",
-            "balanced-market.csv",
+            "balanced-market",
             1101,
             40,
             40,
@@ -45,7 +48,7 @@ public static class ScenarioRunner
             }),
         new(
             "Excess-demand market",
-            "excess-demand-market.csv",
+            "excess-demand-market",
             2202,
             80,
             25,
@@ -57,7 +60,7 @@ public static class ScenarioRunner
             }),
         new(
             "Excess-supply market",
-            "excess-supply-market.csv",
+            "excess-supply-market",
             3303,
             25,
             80,
@@ -85,7 +88,13 @@ public static class ScenarioRunner
             PrintSummary(result.Summary, output);
         }
 
-        output.WriteLine($"Scenario CSV files written to {Path.GetFullPath(outputDirectory)}");
+        DashboardData comparison = new(
+            "Housing Market Simulation",
+            results.Select(result => result.DashboardData).ToArray());
+        DashboardJsonExporter.Export(
+            comparison,
+            Path.Combine(outputDirectory, "scenario-comparison.json"));
+        output.WriteLine($"Scenario analysis written to {Path.GetFullPath(outputDirectory)}");
         return results;
     }
 
@@ -123,16 +132,56 @@ public static class ScenarioRunner
             }
         }
 
-        float endingAverage = AverageAskingPrice(market.Houses);
-        float askingPricePercentageChange = startingAverage == 0
-            ? 0
-            : (endingAverage - startingAverage) / startingAverage * 100f;
-        ScenarioSummary summary = new(
+        ScenarioSummary summary = CreateSummary(scenario.Name, market, startingAverage);
+        ScenarioDashboardData dashboardData = DashboardDataFactory.CreateScenario(
+            scenario.Id,
             scenario.Name,
+            scenario.Seed,
+            scenario.Months,
+            scenario.InitialBuyers,
+            scenario.InitialHouses,
+            scenario.Settings,
+            summary,
+            market);
+
+        string scenarioDirectory = Path.Combine(outputDirectory, scenario.Id);
+        Directory.CreateDirectory(scenarioDirectory);
+        string csvPath = Path.Combine(scenarioDirectory, "monthly-market-reports.csv");
+        string analyticsCsvPath = Path.Combine(scenarioDirectory, "monthly-analytics.csv");
+        string dashboardJsonPath = Path.Combine(scenarioDirectory, "dashboard-data.json");
+        MonthlyReportCsvExporter.Export(market.MonthlyReports, csvPath);
+        AnalyticsCsvExporter.Export(market.AnalyticsSnapshots, analyticsCsvPath);
+        DashboardJsonExporter.Export(
+            new DashboardData("Housing Market Simulation", [dashboardData]),
+            dashboardJsonPath);
+        return new ScenarioRunResult(
+            scenario,
+            summary,
+            market,
+            dashboardData,
+            csvPath,
+            analyticsCsvPath,
+            dashboardJsonPath);
+    }
+
+    public static ScenarioSummary CreateSummary(
+        string name,
+        Market market,
+        float startingAverageAskingPrice)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(market);
+        float endingAverage = AverageAskingPrice(market.Houses);
+        float askingPricePercentageChange = startingAverageAskingPrice == 0
+            ? 0
+            : (endingAverage - startingAverageAskingPrice)
+                / startingAverageAskingPrice * 100f;
+        return new ScenarioSummary(
+            name,
             market.Transactions.Count,
             market.Buyers.Count,
             market.Houses.Count,
-            startingAverage,
+            startingAverageAskingPrice,
             endingAverage,
             askingPricePercentageChange,
             Average(market.Transactions
@@ -141,12 +190,11 @@ public static class ScenarioRunner
             Average(market.Transactions.Select(
                 transaction => (float)transaction.MonthsOnMarket)),
             market.Transactions.Sum(transaction => transaction.SalePrice));
-
-        Directory.CreateDirectory(outputDirectory);
-        string csvPath = Path.Combine(outputDirectory, scenario.FileName);
-        MonthlyReportCsvExporter.Export(market.MonthlyReports, csvPath);
-        return new ScenarioRunResult(scenario, summary, market, csvPath);
     }
+
+    public static float AverageAskingPrice(IEnumerable<House> houses) =>
+        Average(houses.Where(house => house.AskingPrice > 0)
+            .Select(house => house.AskingPrice));
 
     private static void PrintSummary(ScenarioSummary summary, TextWriter output)
     {
@@ -164,10 +212,6 @@ public static class ScenarioRunner
             $"average time on market: {summary.AverageTimeOnMarket:F2} months; " +
             $"transaction value: {summary.TotalTransactionValue:F2} K");
     }
-
-    private static float AverageAskingPrice(IEnumerable<House> houses) =>
-        Average(houses.Where(house => house.AskingPrice > 0)
-            .Select(house => house.AskingPrice));
 
     private static float Average(IEnumerable<float> values)
     {

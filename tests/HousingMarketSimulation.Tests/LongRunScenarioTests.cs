@@ -51,6 +51,8 @@ public class LongRunScenarioTests
             {
                 ValidateLongRun(result);
                 Assert.True(File.Exists(result.CsvPath));
+                Assert.True(File.Exists(result.AnalyticsCsvPath));
+                Assert.True(File.Exists(result.DashboardJsonPath));
                 string[] csvLines = File.ReadAllLines(result.CsvPath);
                 Assert.Equal(121, csvLines.Length);
                 Assert.DoesNotContain("MarketInventoryEnd", csvLines[0]);
@@ -67,6 +69,7 @@ public class LongRunScenarioTests
     {
         Market market = result.Market;
         Assert.Equal(120, market.MonthlyReports.Count);
+        Assert.Equal(120, market.AnalyticsSnapshots.Count);
         Assert.Equal(
             market.Transactions.Count,
             market.MonthlyReports.Sum(report => report.TransactionsCompleted));
@@ -123,6 +126,19 @@ public class LongRunScenarioTests
             transactionOffset += report.TransactionsCompleted;
         }
         Assert.Equal(market.Transactions.Count, transactionOffset);
+        Assert.All(market.AnalyticsSnapshots, snapshot =>
+        {
+            Assert.Equal(snapshot.Month == 1
+                ? result.Scenario.InitialHouses
+                : result.Scenario.Settings.NewHousesPerMonth,
+                snapshot.NewListings);
+            Assert.True(snapshot.ActiveListings >= snapshot.Transactions);
+            Assert.True(snapshot.EndingInventory >= 0);
+            AssertNullableFinite(snapshot.ConstantQualityPriceIndex);
+            AssertNullableFinite(snapshot.MonthsOfSupply);
+            AssertNullableFinite(snapshot.MedianBuyerMaximumPurchasePrice);
+            AssertNullableFinite(snapshot.PercentageBuyersCapableOfBidding);
+        });
 
         ScenarioSummary summary = result.Summary;
         Assert.Equal(market.Transactions.Count, summary.TotalTransactions);
@@ -142,6 +158,11 @@ public class LongRunScenarioTests
         Assert.True(value >= 0, $"Expected a non-negative value, received {value}.");
     }
 
+    private static void AssertNullableFinite(float? value)
+    {
+        if (value.HasValue) Assert.True(float.IsFinite(value.Value));
+    }
+
     private static string Snapshot(ScenarioRunResult result)
     {
         IEnumerable<string> transactions = result.Market.Transactions.Select(transaction =>
@@ -151,7 +172,13 @@ public class LongRunScenarioTests
                 $"{report.PriceReductions}|{report.PriceIncreases}|{report.HousesRemaining}|" +
                 $"{report.AverageAskingPriceDuringMonth}|{report.MedianAskingPrice}|" +
                 $"{report.AverageSalePrice}|{report.TotalTransactionValue}");
-        return string.Join(Environment.NewLine, transactions.Concat(reports));
+        IEnumerable<string> analytics = result.Market.AnalyticsSnapshots.Select(snapshot =>
+            $"A|{snapshot.Month}|{snapshot.ConstantQualityPriceIndex}|" +
+            $"{snapshot.ActiveBuyers}|{snapshot.ActiveListings}|" +
+            $"{snapshot.EndingInventory}|{snapshot.MonthsOfSupply}");
+        return string.Join(
+            Environment.NewLine,
+            transactions.Concat(reports).Concat(analytics));
     }
 
     private static string CreateTemporaryDirectory()

@@ -49,8 +49,8 @@ public class House
         if (AgeYears < 0) throw new ArgumentOutOfRangeException(nameof(AgeYears));
     }
 
-    public Transaction? DeliberateBids(Random random) =>
-        new AuctionService().Settle(this, random);
+    public Transaction? DeliberateBids(Random random, int transactionMonth) =>
+        new AuctionService().Settle(this, random, transactionMonth);
 
     public string PrintAll() => "name : " + Name;
 }

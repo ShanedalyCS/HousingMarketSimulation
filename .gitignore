@@ -19,3 +19,6 @@ obj/
 *.tmp
 monthly-market-reports.csv
 scenario-output/
+monthly-analytics.csv
+dashboard-data.json
+analysis-output/

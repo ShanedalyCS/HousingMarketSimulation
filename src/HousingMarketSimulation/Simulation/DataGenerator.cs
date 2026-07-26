@@ -9,7 +9,10 @@ public class DataGenerator
     {
         this.random = random ?? new Random();
         this.valuationService = valuationService ?? new HouseValuationService();
-        const string path = "first-names.txt";
+        string path = Path.Combine(
+            AppContext.BaseDirectory,
+            "Data",
+            "first-names.txt");
 
         if (File.Exists(path))
         {

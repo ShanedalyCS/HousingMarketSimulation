@@ -9,7 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="HousingMarketSimulation.Tests\**\*.cs" />
+    <Content Include="Data\first-names.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Dashboard\dashboard-template.html" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

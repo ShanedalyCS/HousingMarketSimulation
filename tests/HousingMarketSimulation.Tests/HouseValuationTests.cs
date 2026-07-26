@@ -57,7 +57,11 @@ public class HouseValuationTests
     {
         House subject = Create();
         House comparable = Create();
-        Transaction sale = new(new Buyer("Buyer", 30, 100, 5, 100, false), comparable, 500);
+        Transaction sale = new(
+            new Buyer("Buyer", 30, 100, 5, 100, false),
+            comparable,
+            500,
+            1);
         float originalBaseValue = subject.BaseValue;
 
         Assert.NotEqual(subject.BaseValue, service.EstimateMarketValue(subject, [sale]));
@@ -73,7 +77,7 @@ public class HouseValuationTests
 
         float estimate = service.EstimateMarketValue(
             subject,
-            [new Transaction(buyer, otherLocation, 900)]);
+            [new Transaction(buyer, otherLocation, 900, 1)]);
 
         Assert.Equal(subject.BaseValue, estimate);
     }

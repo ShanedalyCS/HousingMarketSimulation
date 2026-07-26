@@ -2,10 +2,16 @@ public sealed class AuctionService(SimulationSettings? settings = null)
 {
     private readonly SimulationSettings settings = settings ?? new SimulationSettings();
 
-    public Transaction? Settle(House house, Random random, ISet<Buyer>? successfulBuyers = null)
+    public Transaction? Settle(
+        House house,
+        Random random,
+        int transactionMonth,
+        ISet<Buyer>? successfulBuyers = null)
     {
         ArgumentNullException.ThrowIfNull(house);
         ArgumentNullException.ThrowIfNull(random);
+        if (transactionMonth < 1)
+            throw new ArgumentOutOfRangeException(nameof(transactionMonth));
 
         List<Bid> availableBids = house.Bids
             .Where(bid => successfulBuyers is null || !successfulBuyers.Contains(bid.Buyer))
@@ -43,6 +49,7 @@ public sealed class AuctionService(SimulationSettings? settings = null)
             winner.Buyer,
             house,
             MathF.Round(salePrice, 2),
+            transactionMonth,
             house.AskingPrice,
             house.MonthsOnMarket);
     }
