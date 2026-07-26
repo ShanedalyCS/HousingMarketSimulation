@@ -1,170 +1,156 @@
-# Housing Market Simulation
+# Agent-Based Housing Market Simulation
 
-A deterministic, monthly agent-style housing market written in C#. Buyers form
-individual willingness-to-pay values, submit sealed bids, and leave the market
-after purchasing. Completed sales feed back into later valuations and seller
-prices. A separate analytics layer observes the simulation and produces
-reproducible CSV/JSON datasets plus a self-contained interactive dashboard.
+A deterministic agent-based housing market simulation in C# where autonomous
+buyers compete for properties, completed transactions influence future prices,
+and an interactive dashboard compares supply-and-demand scenarios.
 
-All monetary values are in thousands. For example, `100 K` represents 100,000
-in the simulated currency.
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![Build and test](https://github.com/ShanedalyCS/HousingMarketSimulation/actions/workflows/dotnet.yml/badge.svg)](https://github.com/ShanedalyCS/HousingMarketSimulation/actions/workflows/dotnet.yml)
 
-## Repository structure
+## Live demo
 
-```text
-HousingMarketSimulation.slnx
-README.md
-src/HousingMarketSimulation/
-  Analytics/       rolling indices and monthly analytical snapshots
-  Configuration/   simulation, valuation, and analytics settings
-  Dashboard/       offline HTML dashboard generator and template
-  Data/            runtime seed data
-  Domain/          buyers, houses, bids, and transactions
-  Reporting/       CSV and JSON exporters
-  Services/        bidding, valuation, pricing, and buyer decisions
-  Simulation/      market state, lifecycle, scenarios, and data generation
-tests/HousingMarketSimulation.Tests/
+> **Deployment pending:** GitHub Pages deployment is prepared and will publish
+> the dashboard from `main` after this release PR is reviewed, merged, and Pages
+> is configured to use GitHub Actions. No unverified URL is presented here.
+
+## Dashboard preview
+
+![Housing Market Simulation dashboard](docs/assets/dashboard-preview.png)
+
+The self-contained dashboard runs entirely in the browser with embedded,
+deterministic scenario data. It needs no server, CDN, JavaScript framework, or
+network connection.
+
+## Key findings
+
+| Scenario | Raw asking-price change | Quality-adjusted index | Sale-to-list ratio | Average time on market |
+|---|---:|---:|---:|---:|
+| Balanced | -17.47% | 113.34 | 103.76% | 7.03 months |
+| Excess demand | -25.14% | 115.80 | 107.79% | 2.07 months |
+| Excess supply | -8.26% | 105.64 | 100.77% | 12.18 months |
+
+Excess demand produced the strongest quality-adjusted price growth, highest
+sale-to-list ratio, and shortest sale time. Its raw remaining-inventory average
+still fell because desirable and higher-priced properties left the active
+listing stock while a different mix remained. The quality-adjusted index helps
+expose that underlying transaction-price pressure.
+
+These deterministic scenarios explain model behaviour; they do not establish
+real-world housing-policy conclusions.
+
+## What this project demonstrates
+
+- Object-oriented C# design with explicit domain, service, simulation,
+  reporting, and analytics boundaries.
+- Agent-based, discrete-time simulation with deterministic random modelling.
+- Heterogeneous preferences, affordability constraints, and sealed-bid auction
+  settlement.
+- Transaction-driven comparable valuation and persistent seller pricing.
+- Rolling quality-adjusted indexing and stock-versus-flow market analysis.
+- Stable invariant-culture CSV and nullable JSON exports.
+- Responsive, accessible SVG visualisation using dependency-free HTML, CSS, and
+  vanilla JavaScript.
+- xUnit regression and 120-month scenario testing.
+- GitHub Actions CI/CD and automated static-site deployment.
+
+## How it works
+
+Every month is processed in a fixed order:
+
+1. Active buyers save part of their income and active listings age by one month.
+2. Completed transactions update comparable valuations.
+3. Asking prices move gradually toward persistent seller targets.
+4. Buyers rank houses using personal location, quality, size, plot, and age
+   preferences.
+5. Affordability limits cap willingness to pay.
+6. Buyers submit at most one sealed bid; qualifying auctions settle using
+   asking price and second-price evidence.
+7. Sold houses and successful buyers leave the market.
+8. Unsuccessful listings adjust prices.
+9. Reporting and analytics capture the post-settlement market before new
+   entrants arrive.
+
+```mermaid
+flowchart TD
+    A["Buyer and house agents"] --> B["Monthly simulation"]
+    B --> C["Sealed-bid auctions"]
+    C --> D["Transactions"]
+    D --> E["Comparable valuations"]
+    E --> B
+    B --> F["Analytics snapshots"]
+    F --> G["CSV and JSON exports"]
+    G --> H["Interactive dashboard"]
 ```
 
-Generated analysis is kept under `analysis-output/` and ignored by Git, so the
-repository root remains source-focused.
+### Buyer and seller decisions
 
-## Monthly lifecycle
-
-Each month runs in this order:
-
-1. Clear previous bidding and buyer-selection state.
-2. Add 20% of monthly salary to each active buyer's savings.
-3. Increment each active listing's time on market.
-4. Recalculate estimated values from completed comparable sales.
-5. Move asking prices toward each seller's market-informed target.
-6. Capture evaluation-time affordability and asking-price analytics.
-7. Let buyers evaluate listings and submit at most one sealed bid.
-8. Settle each house's auction and timestamp each transaction with the month.
-9. Remove sold houses and successful buyers.
-10. Adjust unsuccessful listings.
-11. Capture the end-of-month analytical snapshot and monthly report.
-12. Add configured entrants, who participate beginning next month.
-
-The analytical services only read simulation state. They do not change buyer,
-seller, bidding, valuation, or settlement behaviour.
-
-## Values and market feedback
-
-The model keeps four monetary concepts separate:
-
-- `BaseValue`: immutable fundamental cost valuation.
-- `EstimatedMarketValue`: fundamental value blended with comparable sales.
-- `AskingPrice`: seller's current list price.
-- `SalePrice`: auction settlement recorded in a transaction.
-
-```text
-BaseValue = LandValue + ReplacementCost - AgeDepreciation
-seller target = EstimatedMarketValue × persistent seller multiplier
-```
-
-Land begins at `0.35 K` per plot square metre and varies by location.
-Replacement cost is floor area times `1.8 K`, adjusted for quality. It
-depreciates by 1% per year, capped at 60%. Each seller receives one seeded
-multiplier from 0.95 to 1.15 for the life of the listing. Asking prices move
-toward the target in either direction, capped at 3% per month by default.
-
-Comparable sales are scored by location, floor-area similarity, build quality,
-and age. A comparable's bounded sale-price-to-base-value ratio is applied to the
-subject property's base value. Similar transactions receive more weight, while
-sample influence is capped. With no suitable comparables, the fundamental value
-is retained.
-
-## Buyer decisions and settlement
-
-Buyer suitability combines normalized preferences for location, quality, floor
-area, plot size, and age:
+Buyers calculate suitability from normalized preferences, then combine it with
+estimated market value and motivation:
 
 ```text
 perceived value = EstimatedMarketValue × (0.80 + 0.40 × suitability)
 motivated value = perceived value × (1 + motivation / 200)
 maximum bid = min(motivated value, affordability limit)
+
+affordability limit =
+    min(savings / 20%, savings + annual salary × 4)
 ```
 
-Affordability is the lower of the deposit constraint and income multiple:
+Each seller receives a seeded multiplier that persists for the listing's
+lifetime. Asking prices move toward:
 
 ```text
-min(savings / 20%, savings + annual salary × 4)
+seller target = EstimatedMarketValue × persistent seller multiplier
 ```
 
-A buyer considers a below-asking bid only within the configured tolerance.
-With one qualifying bid, the winner pays asking price. With multiple qualifying
-bids, the winner pays the lower of their own maximum and the greater of asking
-price or second-highest bid plus the configured increment. Seeded lotteries
-resolve equal bids.
+Completed sales therefore affect subsequent comparable valuations, buyer bids,
+seller targets, and future transactions without replacing the fundamental
+property valuation.
 
-Listings with no bids are reduced by 2% by default. Listings with rejected bids
-move halfway toward the highest rejected bid, subject to the monthly movement
-cap. Successful sale evidence—not an artificial bid-count rule—drives upward
-market feedback.
+## Analytical methodology
 
-## Analytics
-
-`MarketAnalyticsService` records one snapshot per completed month.
-Evaluation-time metrics use the active buyer and listing stocks immediately
-before bidding. Ending-inventory metrics use the post-sale, post-adjustment
-market before new entrants. `NewListings` is a flow: initial stock in month 1,
-then configured monthly entrants.
-
-The snapshot includes:
-
-- average and median raw asking and sale prices;
-- a rolling constant-quality price index, overall and by location;
-- active buyers, active listings, new listings, transactions, and inventory;
-- months of supply and inventory-to-buyer ratio;
-- sales, price reductions, and price increases;
-- sale-to-list ratio, time on market, and total transaction value;
-- median buyer affordability and asking price;
-- percentage of buyers capable of bidding and median affordability gap.
-
-Undefined values are represented as blank CSV fields and JSON `null`, never
-fabricated zeroes, `NaN`, or infinity. For example, months of supply is
-undefined when a month has no transactions.
-
-### Constant-quality price index
-
-For each valid transaction:
+Raw averages can move because the types of houses sold or remaining change. The
+constant-quality index normalizes each eligible sale by that house's immutable,
+modeled fundamental value:
 
 ```text
-quality-adjusted ratio = SalePrice / BaseValue
+MarketFactor = median(SalePrice / BaseValue)
+PriceIndex = 100 × CurrentMarketFactor / BaselineMarketFactor
 ```
 
-Ratios outside the configured 0.50–2.00 bounds are excluded. The monthly index
-uses the median ratio across the rolling 12-month window:
+- Uses a configurable trailing 12-month window.
+- Bounds eligible sale-to-base ratios to 0.50–2.00.
+- Establishes the baseline at the first window with at least five valid overall
+  transactions.
+- Uses a three-transaction minimum for Low, Average, High, and Prime location
+  indices.
+- Independently rebases every scenario to 100.
+- Represents sparse or mathematically undefined periods as unavailable rather
+  than zero, `NaN`, or infinity.
 
-```text
-index = 100 × rolling median ratio / first eligible rolling median ratio
-```
+Monthly analytics cover raw prices, constant-quality indices, active buyers and
+listings, listing inflow, bids, transactions, clearance, ending inventory,
+months of supply, sale time, sale-to-list ratios, transaction value, and
+affordability. Evaluation-time affordability is captured while successful
+buyers and sold houses are still active; ending inventory is captured after
+settlement and unsuccessful-listing adjustments but before entrants.
 
-The overall series requires five valid observations; each location series
-requires three. Before a series has enough evidence it is `null`. Its first
-eligible value becomes the fixed baseline of 100. Segmenting by location and
-normalizing by immutable base value reduces mix effects, although it cannot
-remove every form of composition bias.
+This is a simulation-specific explanatory index. `BaseValue` is a transparent
+model input, not a real hedonic valuation or an official house-price index.
 
-Raw average prices can move merely because a different mix of homes sold—for
-example, more large or desirable properties. The constant-quality index asks a
-different question: how did sale prices move relative to the modeled
-fundamental characteristics of the homes that sold? The dashboard deliberately
-shows both rather than treating either as a complete market measure.
+## Running locally
 
-## Running
-
-Interactive mode:
+Requires the .NET 10 SDK. From the repository root:
 
 ```powershell
+dotnet test HousingMarketSimulation.slnx
 dotnet run --project src/HousingMarketSimulation
+dotnet run --project src/HousingMarketSimulation -- --scenarios
+dotnet run --project src/HousingMarketSimulation -- --dashboard
 ```
 
-It asks for initial counts, months, an optional integer seed, and settings.
-Reusing the same seed and settings reproduces generation, choices, ties,
-transactions, reports, and analytics. It writes these files in the launch
-directory:
+Interactive mode asks for initial counts, duration, an optional seed, and
+simulation settings. It writes:
 
 ```text
 monthly-market-reports.csv
@@ -172,22 +158,11 @@ monthly-analytics.csv
 dashboard-data.json
 ```
 
-Run the three deterministic 120-month scenarios:
-
-```powershell
-dotnet run --project src/HousingMarketSimulation -- --scenarios
-```
-
-Generate the scenario datasets and self-contained dashboard:
-
-```powershell
-dotnet run --project src/HousingMarketSimulation -- --dashboard
-```
-
-Output:
+Scenario and dashboard modes write:
 
 ```text
 analysis-output/
+  index.html
   dashboard.html
   scenario-comparison.json
   balanced-market/
@@ -200,74 +175,53 @@ analysis-output/
     ...
 ```
 
-Open `analysis-output/dashboard.html` directly in a browser. It has no server,
-CDN, package, or network dependency. Scenario selection, comparison mode,
-location series, legend controls, tooltips, KPI cards, and reset controls all
-operate locally.
+Open `analysis-output/index.html` directly or serve `analysis-output/` as a
+static site. `dashboard.html` is an identical compatibility copy.
 
-### What the dashboard demonstrates
+## Testing and reproducibility
 
-- Raw prices and the constant-quality index may diverge when the sold-property
-  mix changes.
-- Excess demand and excess supply produce visibly different buyer/inventory
-  stocks, liquidity, price movements, and affordability.
-- Overall movement can conceal different location-level paths.
-- Missing evidence appears as chart gaps, making sparse or zero-transaction
-  periods explicit.
+The verified suite contains **74 passing xUnit tests**. Coverage includes:
 
-## Reports and formulas
+- transaction timestamps and auction settlement;
+- affordability, preferences, valuation, and seller feedback;
+- snapshot lifecycle timing and stock-versus-flow boundaries;
+- median factors, baseline rebasing, rolling windows, outliers, and location
+  segmentation;
+- composition-bias regression cases;
+- CSV/JSON schemas, null handling, and deterministic exports;
+- dashboard generation and Pages entry-point parity;
+- reproducible 120-month balanced, excess-demand, and excess-supply scenarios.
 
-The original monthly report remains available. Its asking-price measures are
-captured after comparable updates and seller movement, when buyers evaluate
-listings. Remaining inventory is measured after settlement and unsuccessful
-listing adjustments, before entrants.
+Supplying the same seed and settings reproduces generated agents, property
+characteristics, buyer choices, bid ties, transactions, reports, and analytics.
+GitHub Actions restores, builds, and tests every pull request targeting `main`.
+A separate Pages workflow repeats Release build and tests before generating and
+deploying the dashboard from merged `main`.
 
-Key analytical formulas are:
+## Architecture
 
 ```text
-months of supply = ending inventory / monthly transactions
-inventory-to-buyer ratio = ending inventory / active buyers
-sale-to-list ratio = mean(SalePrice / ListPrice)
-capable buyer percentage =
-  buyers able to bid on at least one evaluation-time listing / active buyers × 100
+src/HousingMarketSimulation/
+  Analytics/       rolling indices and monthly analytical snapshots
+  Configuration/   simulation, valuation, and analytics settings
+  Dashboard/       offline template and dashboard generator
+  Data/            runtime seed data
+  Domain/          buyers, houses, bids, and transactions
+  Reporting/       CSV and JSON exporters
+  Services/        bidding, valuation, pricing, and buyer decisions
+  Simulation/      market lifecycle, scenarios, and data generation
+tests/HousingMarketSimulation.Tests/
+docs/assets/
 ```
 
-CSV output uses stable headers and invariant-culture decimals.
+## Model boundaries
 
-## Configuration
-
-- `SimulationSettings`: entrants, price adjustments, bid tolerance, auction
-  increment, and savings rate.
-- `ValuationSettings`: cost assumptions, seller multipliers, comparable
-  similarity, weighting, and ratio bounds.
-- `AnalyticsSettings`: rolling window, minimum overall/location observations,
-  and price-index ratio bounds.
-
-All three reject non-finite values, invalid ranges, and inconsistent bounds.
-
-## Tests and CI
-
-```powershell
-dotnet test HousingMarketSimulation.slnx
-```
-
-Tests cover transaction timestamps, lifecycle timing, market behaviour,
-constant-quality baselines and rolling windows, sparse data, composition bias,
-location segmentation, affordability timing, schema stability, JSON nulls,
-dashboard embedding, deterministic replay, and 120-month scenario sanity.
-
-GitHub Actions restores, builds, and tests Release configuration for pushes to
-`main` or `master` and pull requests targeting `main`.
-
-## Modelling limitations
-
-- Formulas are transparent simulation rules, not official statistics or
-  empirically calibrated housing indices.
-- Base value is a modeled cost proxy and cannot capture every quality or
-  location characteristic, so residual composition bias remains.
-- Small samples make medians and location indices volatile; thresholds prevent
-  false precision but do not create evidence.
-- There are no interest rates, repayments, taxes, transaction costs, rentals,
-  construction delays, or geographic submarkets within a location category.
-- Successful buyers leave the market; post-purchase cash flows are not modeled.
-- Sellers have persistent tendencies but are not strategic agents.
+- Behaviour is explanatory rather than empirically calibrated.
+- Interest rates, repayments, taxes, transaction costs, construction delays,
+  and rental markets are outside the model.
+- Sellers remain rule-based rather than strategic learning agents.
+- Successful buyers leave the market, so post-purchase cash flow is not
+  represented.
+- The quality index observes only completed transactions and can still reflect
+  unmodeled differences within the fundamental valuation.
+- Simulated `BaseValue` is a cost-based reference, not a real hedonic estimate.

@@ -21,10 +21,18 @@ public class DashboardGenerationTests
 
             string path = DashboardGenerator.Generate(results, directory);
             string html = File.ReadAllText(path);
+            string compatibilityPath = Path.Combine(directory, "dashboard.html");
 
+            Assert.Equal(Path.Combine(directory, "index.html"), path);
             Assert.True(File.Exists(path));
+            Assert.True(File.Exists(compatibilityPath));
+            Assert.Equal(html, File.ReadAllText(compatibilityPath));
             Assert.DoesNotContain("__DASHBOARD_DATA__", html);
             Assert.DoesNotContain("https://", html);
+            Assert.Contains("<meta name=\"description\"", html);
+            Assert.Contains("<meta name=\"theme-color\" content=\"#030303\">", html);
+            Assert.Contains("Agent-Based Housing Market Simulation", html);
+            Assert.Contains("Methodology at a glance", html);
             Assert.Contains("Balanced market", html);
             Assert.Contains("Excess-demand market", html);
             Assert.Contains("Excess-supply market", html);
