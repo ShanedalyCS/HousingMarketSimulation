@@ -66,7 +66,7 @@ public class BiddingTests
 
     private static House CreateHouse(float price)
     {
-        return new House("House", price, 10, 10, 10, 10);
+        return TestHouseFactory.Create(price);
     }
 
     private static Buyer CreateBuyer(string name, float motivation = 5)

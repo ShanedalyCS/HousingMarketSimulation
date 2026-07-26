@@ -1,148 +1,64 @@
 public class House
 {
-    private string name;
+    public List<Bid> bids = [];
 
-    public float value;
-
-    public float quality; // will be made up of a score of the four variables below. 
-    public float technology;
-    public float age;
-    public float area;
-    public float size;
-
-    public List<Bid> bids;
-
-    public House(string name, float value, float technology, float age, float area, float size)
+    public House(
+        string name,
+        float floorAreaSquareMetres,
+        float plotSizeSquareMetres,
+        float ageYears,
+        PropertyQuality buildQuality,
+        LocationDesirability location,
+        HouseValuationService valuationService,
+        Random random)
     {
-        this.name = name;
-        this.value = value;
-        this.technology = technology;
-        this.age = age;
-        this.area = area;
-        this.size = size;
+        Name = name;
+        FloorAreaSquareMetres = floorAreaSquareMetres;
+        PlotSizeSquareMetres = plotSizeSquareMetres;
+        AgeYears = ageYears;
+        BuildQuality = buildQuality;
+        Location = location;
+        ValidateCharacteristics();
 
-        this.quality = technology + age + area + size;
+        BaseValue = valuationService.CalculateBaseValue(this);
+        EstimatedMarketValue = BaseValue;
+        AskingPrice = valuationService.GenerateAskingPrice(BaseValue, random);
+    }
 
-        this.bids = [];
+    public string Name { get; set; }
+    public float BaseValue { get; private set; }
+    public float AskingPrice { get; set; }
+    public float EstimatedMarketValue { get; internal set; }
+    public PropertyQuality BuildQuality { get; set; } = PropertyQuality.Standard;
+    public LocationDesirability Location { get; set; } = LocationDesirability.Average;
+    public float FloorAreaSquareMetres { get; set; }
+    public float PlotSizeSquareMetres { get; set; }
+    public float AgeYears { get; set; }
 
+    public float Quality =>
+        FloorAreaSquareMetres + PlotSizeSquareMetres / 4f + (int)BuildQuality * 10f;
+
+    public void ValidateCharacteristics()
+    {
+        if (FloorAreaSquareMetres < 0) throw new ArgumentOutOfRangeException(nameof(FloorAreaSquareMetres));
+        if (PlotSizeSquareMetres < 0) throw new ArgumentOutOfRangeException(nameof(PlotSizeSquareMetres));
+        if (AgeYears < 0) throw new ArgumentOutOfRangeException(nameof(AgeYears));
     }
 
     public Transaction? DeliberateBids(Random random)
     {
-        if (bids.Count == 0)
-        {
-            return null;
-        }
-
+        if (bids.Count == 0) return null;
         float highestOffer = bids.Max(bid => bid.offerAmount);
-
-        if (highestOffer < Value)
+        if (highestOffer < AskingPrice)
         {
-            Console.WriteLine(
-                $"{Name} rejected all bids and remains on the market at {Value:F2} K");
+            Console.WriteLine($"{Name} rejected all bids and remains on the market at {AskingPrice:F2} K");
             return null;
         }
 
-        List<Bid> highestBids = bids
-            .Where(bid => bid.offerAmount == highestOffer)
-            .ToList();
-
-        // An equal-top-bid tie is settled by a lottery, so list order gives no buyer priority.
+        List<Bid> highestBids = bids.Where(bid => bid.offerAmount == highestOffer).ToList();
         Bid winningBid = highestBids[random.Next(highestBids.Count)];
-
         return new Transaction(winningBid.buyer, this, winningBid.offerAmount);
     }
 
-    public float CalculateQualityBasedValue()
-    {
-        return MathF.Max(30f, Quality * 8f);
-    }
-
-
-    public string Name
-    {
-        get
-        {
-            return name;
-        }
-        set
-        {
-            name = value;
-        }
-    }
-
-    public float Value
-    {
-        get
-        {
-            return value;
-        }
-        set
-        {
-            this.value = value;
-        }
-    }
-
-    public float Quality
-    {
-        get
-        {
-            return quality;
-        }
-    }
-
-    public float Technology
-    {
-        get
-        {
-            return technology;
-        }
-        set
-        {
-            technology = value;
-        }
-    }
-
-    public float Age
-    {
-        get
-        {
-            return age;
-        }
-        set
-        {
-            age = value;
-        }
-    }
-
-    public float Area
-    {
-        get
-        {
-            return area;
-        }
-        set
-        {
-            area = value;
-        }
-    }
-
-    public float Size
-    {
-        get
-        {
-            return size;
-        }
-        set
-        {
-            size = value;
-        }
-    }
-
-    public string PrintAll()
-    {
-        return ("name : " + name);
-    }
-
-    // to use getters and setters in c# : string name = person.Name; for getters. person.Age = 29; for setters.
+    public string PrintAll() => "name : " + Name;
 }

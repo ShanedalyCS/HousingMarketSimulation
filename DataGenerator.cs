@@ -2,11 +2,13 @@ public class DataGenerator
 {
     private readonly List<string> names = [];
     private readonly Random random;
+    private readonly HouseValuationService valuationService;
     private int nextHouseId;
 
-    public DataGenerator(Random? random = null)
+    public DataGenerator(Random? random = null, HouseValuationService? valuationService = null)
     {
         this.random = random ?? new Random();
+        this.valuationService = valuationService ?? new HouseValuationService();
         const string path = "first-names.txt";
 
         if (File.Exists(path))
@@ -21,8 +23,7 @@ public class DataGenerator
     public void GenerateData(
         int numBuyers,
         int numHouses,
-        Market market,
-        bool startHousePricesAtZero = false)
+        Market market)
     {
         for (int i = 0; i < numBuyers; i++)
         {
@@ -31,15 +32,14 @@ public class DataGenerator
 
         for (int i = 0; i < numHouses; i++)
         {
-            GenerateHouse(market, startHousePricesAtZero);
+            GenerateHouse(market);
         }
     }
 
     public void AddMonthlyEntrants(
         Market market,
         int numberOfBuyers,
-        int numberOfHouses,
-        bool startHousePricesAtZero = false)
+        int numberOfHouses)
     {
         for (int i = 0; i < numberOfBuyers; i++)
         {
@@ -48,11 +48,12 @@ public class DataGenerator
 
         for (int i = 0; i < numberOfHouses; i++)
         {
-            GenerateHouse(market, startHousePricesAtZero);
+            GenerateHouse(market);
         }
     }
 
     public Random Random => random;
+    public HouseValuationService ValuationService => valuationService;
 
     private void GenerateBuyer(Market market)
     {
@@ -76,21 +77,21 @@ public class DataGenerator
 
     }
 
-    private void GenerateHouse(Market market, bool startPriceAtZero)
+    private void GenerateHouse(Market market)
     {
-        float technology = random.Next(-3, 10);
-        float age = random.Next(-3, 10);
-        float area = random.Next(-3, 10);
-        float size = random.Next(-3, 10);
+        float floorArea = random.Next(70, 221);
+        float plotSize = random.Next(100, 701);
 
+        House house = new(
+            nextHouseId.ToString(),
+            floorArea,
+            plotSize,
+            random.Next(0, 101),
+            (PropertyQuality)random.Next(Enum.GetValues<PropertyQuality>().Length),
+            (LocationDesirability)random.Next(Enum.GetValues<LocationDesirability>().Length),
+            valuationService,
+            random);
 
-        float value = (technology + age + area + size) * 8;
-
-        if (value <= 0) value = 30;
-        if (startPriceAtZero) value = 0;
-
-
-        House house = new(nextHouseId.ToString(), value, technology, age, area, size);
         nextHouseId++;
 
         market.Houses.Add(house);

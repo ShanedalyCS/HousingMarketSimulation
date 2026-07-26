@@ -12,22 +12,39 @@ Each month runs in this order:
 2. Add 20% of each buyer's monthly salary to their savings.
 3. Calculate which houses each buyer can afford.
 4. Let each buyer choose their highest-quality affordable house and place one bid.
-5. In price-discovery mode, establish prices for zero-priced houses that received at least three bids.
-6. Deliberate bids against the asking price that existed when the bids were placed, or the newly discovered price for a zero-priced house.
-7. Record transactions and remove sold houses and successful buyers.
-8. Adjust prices only for houses that remain on the market.
-9. Record and print the end-of-month report.
-10. Add one buyer and one house that can participate starting next month.
+5. Deliberate bids against the asking price that existed when the bids were placed.
+6. Record transactions and remove sold houses and successful buyers.
+7. Adjust prices only for houses that remain on the market.
+8. Record and print the end-of-month report.
+9. Add one buyer and one house that can participate starting next month.
 
 The report is recorded before new entrants are added. Its active counts describe the buyers and houses that participated during the completed month. Average asking price uses those same active houses, including a sold house's final asking price and any end-of-month reduction applied to an unsold house. Remaining counts describe the inventory left after transactions.
 
-## Normal and price-discovery modes
+## Initial prices
 
-In normal mode, generated houses begin with an asking price derived from their quality characteristics.
+Generated houses receive a fundamental valuation from their physical and
+location characteristics. A seeded seller multiplier then sets the initial asking price.
+The fundamental value is retained even when market logic later changes that asking price.
 
-In optional zero-price discovery mode, houses begin at `0 K`. Buyers form an initial valuation from house quality and motivation. A zero-priced house needs at least three bids before its first asking price is established from the average of those bids. With fewer than three bids, it remains unpriced and all bids are rejected.
+## House valuation
 
-After a price has been established, both modes use the normal bidding and price-adjustment rules.
+All monetary values remain in thousands. Generated houses use:
+
+```text
+BaseValue = LandValue + ReplacementCost - AgeDepreciation
+```
+
+Land starts at `0.35 K` per plot square metre and uses a location multiplier.
+Replacement cost is floor area multiplied by the `1.8 K` construction cost and
+the build-quality multiplier. Replacement cost depreciates by 1% per year,
+capped at 60%.
+
+The initial asking price is the base value multiplied by a seeded seller factor
+between 0.95 and 1.15. Completed sales in the same location category update
+`EstimatedMarketValue` using average sale price per square metre.
+The comparable-sales weight grows with the number of sales and is capped at 70%;
+`BaseValue`, `AskingPrice`, `EstimatedMarketValue`, and transaction `SalePrice`
+remain separate.
 
 ## Affordability and bids
 
@@ -53,7 +70,6 @@ The highest bid meeting the asking price wins. Equal highest bids are settled by
 - A priced house receiving no bids is reduced by 2% if it remains for sale.
 - A remaining house receiving at least three bids increases by 2%.
 - Each bid beyond the three-bid threshold adds another 0.1 percentage points to that increase.
-- Zero-priced houses are not counted as price reductions; their initial pricing is recorded separately as price discovery.
 
 For example, a remaining house with 20 bids increases by `2% + (17 × 0.1%) = 3.7%`.
 
@@ -69,9 +85,8 @@ The program asks for:
 
 1. initial buyer count;
 2. initial house count;
-3. whether to use zero-price discovery mode;
-4. an optional integer random seed;
-5. number of months to simulate.
+3. an optional integer random seed;
+4. number of months to simulate.
 
 Press Enter at the seed prompt for a non-reproducible run. Reusing the same seed and starting inputs produces the same generated market and tied-bid outcomes.
 
@@ -83,7 +98,7 @@ Run the complete xUnit suite with:
 dotnet test HousingMarketSimulation.slnx
 ```
 
-The tests cover affordability, bid acceptance, asking-price timing, monthly price reductions, report snapshots, entrant timing, initial-data reproducibility, zero-price discovery, and reproducible tie-breaking.
+The tests cover affordability, bid acceptance, asking-price timing, monthly price reductions, report snapshots, entrant timing, initial-data reproducibility, valuation, and reproducible tie-breaking.
 
 ## CSV reports
 

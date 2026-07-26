@@ -20,6 +20,6 @@ public class BuyerAffordabilityTests
 
     private static House CreateHouse(float price)
     {
-        return new House("House", price, 1, 1, 1, 1);
+        return TestHouseFactory.Create(price);
     }
 }

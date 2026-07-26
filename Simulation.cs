@@ -1,7 +1,6 @@
 public class Simulation(
     Market market,
-    DataGenerator? generator = null,
-    bool usePriceDiscoveryMode = false)
+    DataGenerator? generator = null)
 {
     private const float UnsoldPriceReductionRate = 0.02f;
     private const float HighDemandPriceIncreaseRate = 0.02f;
@@ -11,7 +10,6 @@ public class Simulation(
     private const int NewHousesPerMonth = 1;
 
     private readonly DataGenerator dataGenerator = generator ?? new DataGenerator();
-    private readonly bool priceDiscoveryMode = usePriceDiscoveryMode;
     private readonly float startingAverageAskingPrice = CalculateAverageAskingPrice(market.Houses);
 
     public Market Market { get; } = market;
@@ -32,7 +30,6 @@ public class Simulation(
         FindBestAffordableHouse();
         MakeBids();
 
-        int priceDiscoveries = DiscoverZeroPrices();
         List<Transaction> completedTransactions = DeliberateBids();
         Market.LogTransactionDetails(completedTransactions);
 
@@ -44,7 +41,6 @@ public class Simulation(
             completedTransactions,
             priceReductions,
             priceIncreases,
-            priceDiscoveries,
             averageAskingPriceDuringMonth);
 
         AddMonthlyEntrants();
@@ -104,9 +100,7 @@ public class Simulation(
                 continue;
             }
 
-            float startingOffer = priceDiscoveryMode && house.Value == 0
-                ? house.CalculateQualityBasedValue()
-                : house.Value;
+            float startingOffer = house.AskingPrice;
             float motivationPremium = startingOffer * (buyer.Motivation / 100f);
             float offerAmount = MathF.Min(
                 startingOffer + motivationPremium,
@@ -116,28 +110,6 @@ public class Simulation(
         }
     }
 
-    private int DiscoverZeroPrices()
-    {
-        if (!priceDiscoveryMode)
-        {
-            return 0;
-        }
-
-        int priceDiscoveries = 0;
-
-        foreach (House house in Market.Houses.Where(house => house.Value == 0))
-        {
-            if (house.bids.Count >= HighDemandBidThreshold)
-            {
-                house.Value = MathF.Round(
-                    house.bids.Average(bid => bid.offerAmount), 2);
-                priceDiscoveries++;
-            }
-        }
-
-        return priceDiscoveries;
-    }
-
     public List<Transaction> DeliberateBids()
     {
         List<Transaction> completedTransactions = [];
@@ -145,18 +117,6 @@ public class Simulation(
 
         foreach (House house in Market.Houses)
         {
-            if (priceDiscoveryMode && house.Value == 0)
-            {
-                if (house.bids.Count > 0)
-                {
-                    Console.WriteLine(
-                        $"{house.Name} rejected all bids because price discovery requires " +
-                        $"{HighDemandBidThreshold} bids");
-                }
-
-                continue;
-            }
-
             Transaction? transaction = house.DeliberateBids(dataGenerator.Random);
             if (transaction != null && successfulBuyers.Add(transaction.Buyer))
             {
@@ -166,6 +126,12 @@ public class Simulation(
 
         Market.Transactions.AddRange(completedTransactions);
         Market.RemoveSoldHousesAndBuyersFromMarket(completedTransactions);
+        foreach (House house in Market.Houses)
+        {
+            dataGenerator.ValuationService.EstimateMarketValue(
+                house,
+                Market.Transactions);
+        }
 
         return completedTransactions;
     }
@@ -177,15 +143,15 @@ public class Simulation(
 
         foreach (House house in Market.Houses)
         {
-            if (house.Value == 0)
+            if (house.AskingPrice == 0)
             {
                 continue;
             }
 
             if (house.bids.Count == 0)
             {
-                house.Value = MathF.Round(
-                    house.Value * (1f - UnsoldPriceReductionRate), 2);
+                house.AskingPrice = MathF.Round(
+                    house.AskingPrice * (1f - UnsoldPriceReductionRate), 2);
                 priceReductions++;
             }
             else if (house.bids.Count >= HighDemandBidThreshold)
@@ -193,8 +159,8 @@ public class Simulation(
                 int extraBids = house.bids.Count - HighDemandBidThreshold;
                 float priceIncreaseRate = HighDemandPriceIncreaseRate
                     + extraBids * AdditionalPriceIncreasePerBid;
-                house.Value = MathF.Round(
-                    house.Value * (1f + priceIncreaseRate), 2);
+                house.AskingPrice = MathF.Round(
+                    house.AskingPrice * (1f + priceIncreaseRate), 2);
                 priceIncreases++;
             }
         }
@@ -208,7 +174,6 @@ public class Simulation(
         List<Transaction> completedTransactions,
         int priceReductions,
         int priceIncreases,
-        int priceDiscoveries,
         float averageAskingPriceDuringMonth)
     {
         float averageSalePrice = completedTransactions.Count == 0
@@ -227,7 +192,6 @@ public class Simulation(
             completedTransactions.Count,
             priceReductions,
             priceIncreases,
-            priceDiscoveries,
             Market.Buyers.Count,
             Market.Houses.Count,
             averageAskingPriceDuringMonth,
@@ -245,18 +209,17 @@ public class Simulation(
         dataGenerator.AddMonthlyEntrants(
             Market,
             NewBuyersPerMonth,
-            NewHousesPerMonth,
-            priceDiscoveryMode);
+            NewHousesPerMonth);
     }
 
     private static float CalculateAverageAskingPrice(IEnumerable<House> houses)
     {
         List<House> pricedHouses = houses
-            .Where(house => house.Value > 0)
+            .Where(house => house.AskingPrice > 0)
             .ToList();
 
         return pricedHouses.Count == 0
             ? 0
-            : pricedHouses.Average(house => house.Value);
+            : pricedHouses.Average(house => house.AskingPrice);
     }
 }
