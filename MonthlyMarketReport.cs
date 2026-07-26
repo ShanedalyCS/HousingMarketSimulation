@@ -12,7 +12,13 @@ public class MonthlyMarketReport(
     float averageSalePrice,
     float startingAverageAskingPrice,
     float askingPriceChange,
-    float askingPricePercentageChange)
+    float askingPricePercentageChange,
+    float medianAskingPrice = 0,
+    float medianSalePrice = 0,
+    float averageSaleToListRatio = 0,
+    float averageTimeOnMarketForSoldHouses = 0,
+    float totalTransactionValue = 0,
+    int marketInventoryEnd = 0)
 {
     public int Month { get; } = month;
     public int BuyersActiveDuringMonth { get; } = buyersActiveDuringMonth;
@@ -28,27 +34,25 @@ public class MonthlyMarketReport(
     public float StartingAverageAskingPrice { get; } = startingAverageAskingPrice;
     public float AskingPriceChange { get; } = askingPriceChange;
     public float AskingPricePercentageChange { get; } = askingPricePercentageChange;
+    public float MedianAskingPrice { get; } = medianAskingPrice;
+    public float MedianSalePrice { get; } = medianSalePrice;
+    public float AverageSaleToListRatio { get; } = averageSaleToListRatio;
+    public float AverageTimeOnMarketForSoldHouses { get; } = averageTimeOnMarketForSoldHouses;
+    public float TotalTransactionValue { get; } = totalTransactionValue;
+    public int MarketInventoryEnd { get; } = marketInventoryEnd;
 
     public void Print()
     {
         Console.WriteLine("----- MONTHLY MARKET REPORT -----");
         Console.WriteLine($"Buyers / houses active this month: {BuyersActiveDuringMonth} / {HousesActiveDuringMonth}");
-        Console.WriteLine($"Bids placed: {BidsPlaced}");
-        Console.WriteLine($"Transactions completed: {TransactionsCompleted}");
+        Console.WriteLine($"Bids / transactions: {BidsPlaced} / {TransactionsCompleted}");
         Console.WriteLine($"Price reductions / increases: {PriceReductions} / {PriceIncreases}");
-        Console.WriteLine($"Buyers / houses remaining: {BuyersRemaining} / {HousesRemaining}");
-        Console.WriteLine($"Average asking price of houses active this month: {AverageAskingPriceDuringMonth:F2} K");
-        Console.WriteLine($"Average sale price: {AverageSalePrice:F2} K");
-
-        string direction = AskingPriceChange > 0
-            ? "up"
-            : AskingPriceChange < 0 ? "down" : "unchanged";
-        string percentageChange = StartingAverageAskingPrice == 0
-            ? "percentage unavailable: starting average was 0"
-            : $"{MathF.Abs(AskingPricePercentageChange):F2}%";
-        Console.WriteLine(
-            $"Average asking price since start: {direction} {MathF.Abs(AskingPriceChange):F2} K " +
-            $"({percentageChange})");
+        Console.WriteLine($"Buyers remaining / ending inventory: {BuyersRemaining} / {MarketInventoryEnd}");
+        Console.WriteLine($"Average / median asking price: {AverageAskingPriceDuringMonth:F2} / {MedianAskingPrice:F2} K");
+        Console.WriteLine($"Average / median sale price: {AverageSalePrice:F2} / {MedianSalePrice:F2} K");
+        Console.WriteLine($"Sale-to-list ratio: {AverageSaleToListRatio:P2}");
+        Console.WriteLine($"Average time on market for sales: {AverageTimeOnMarketForSoldHouses:F2} months");
+        Console.WriteLine($"Total transaction value: {TotalTransactionValue:F2} K");
         Console.WriteLine("---------------------------------");
     }
 }

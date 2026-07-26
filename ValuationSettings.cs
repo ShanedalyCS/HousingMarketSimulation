@@ -8,6 +8,15 @@ public sealed class ValuationSettings
     public float MaximumComparableWeight { get; init; } = 0.70f;
     public float MinimumSellerPriceMultiplier { get; init; } = 0.95f;
     public float MaximumSellerPriceMultiplier { get; init; } = 1.15f;
+    public float MinimumComparableSimilarity { get; init; } = 0.55f;
+    public float LocationSimilarityWeight { get; init; } = 0.35f;
+    public float FloorAreaSimilarityWeight { get; init; } = 0.30f;
+    public float BuildQualitySimilarityWeight { get; init; } = 0.20f;
+    public float HouseAgeSimilarityWeight { get; init; } = 0.15f;
+    public float MaximumFloorAreaDifferenceRatio { get; init; } = 0.60f;
+    public float MaximumHouseAgeDifference { get; init; } = 50f;
+    public float MinimumComparablePriceRatio { get; init; } = 0.60f;
+    public float MaximumComparablePriceRatio { get; init; } = 1.60f;
 
     public IReadOnlyDictionary<PropertyQuality, float> QualityMultipliers { get; init; } =
         new Dictionary<PropertyQuality, float>

@@ -1,6 +1,22 @@
-public class Transaction(Buyer buyer, House house, float salePrice)
+public class Transaction
 {
-    public Buyer Buyer { get; set; } = buyer;
-    public House House { get; set; } = house;
-    public float SalePrice { get; set; } = salePrice;
+    public Transaction(
+        Buyer buyer,
+        House house,
+        float salePrice,
+        float? listPrice = null,
+        int? monthsOnMarket = null)
+    {
+        Buyer = buyer;
+        House = house;
+        SalePrice = salePrice;
+        ListPrice = listPrice ?? house.AskingPrice;
+        MonthsOnMarket = monthsOnMarket ?? house.MonthsOnMarket;
+    }
+
+    public Buyer Buyer { get; set; }
+    public House House { get; set; }
+    public float SalePrice { get; set; }
+    public float ListPrice { get; }
+    public int MonthsOnMarket { get; }
 }

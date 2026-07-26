@@ -1,18 +1,28 @@
-public class Simulation(
-    Market market,
-    DataGenerator? generator = null)
+public class Simulation
 {
-    private const float UnsoldPriceReductionRate = 0.02f;
-    private const float HighDemandPriceIncreaseRate = 0.02f;
-    private const float AdditionalPriceIncreasePerBid = 0.001f;
-    private const int HighDemandBidThreshold = 3;
-    private const int NewBuyersPerMonth = 1;
-    private const int NewHousesPerMonth = 1;
+    private readonly DataGenerator dataGenerator;
+    private readonly SimulationSettings settings;
+    private readonly BuyerDecisionService buyerDecisionService;
+    private readonly AuctionService auctionService;
+    private readonly SellerPricingService sellerPricingService;
+    private readonly float startingAverageAskingPrice;
 
-    private readonly DataGenerator dataGenerator = generator ?? new DataGenerator();
-    private readonly float startingAverageAskingPrice = CalculateAverageAskingPrice(market.Houses);
+    public Simulation(
+        Market market,
+        DataGenerator? generator = null,
+        SimulationSettings? settings = null)
+    {
+        Market = market;
+        dataGenerator = generator ?? new DataGenerator();
+        this.settings = settings ?? new SimulationSettings();
+        this.settings.Validate();
+        buyerDecisionService = new BuyerDecisionService(this.settings);
+        auctionService = new AuctionService(this.settings);
+        sellerPricingService = new SellerPricingService(this.settings);
+        startingAverageAskingPrice = CalculateAverage(market.Houses.Select(house => house.AskingPrice));
+    }
 
-    public Market Market { get; } = market;
+    public Market Market { get; }
     public int CurrentMonth { get; private set; }
 
     public void RunTick()
@@ -20,39 +30,48 @@ public class Simulation(
         CurrentMonth++;
         Console.WriteLine($"\n===== MONTH {CurrentMonth} =====");
 
-        ClearMonthlyBiddingState();
-
+        ClearMonthlyState();
         int buyersActiveThisMonth = Market.Buyers.Count;
         List<House> housesActiveThisMonth = [.. Market.Houses];
 
         UpdateBuyerFinances();
-        CheckAffordableHouses();
+        IncrementTimeOnMarket();
+        RecalculateEstimatedMarketValues();
+        (int priceReductions, int priceIncreases) = ApplyMarketInformedPricing();
+
+        float[] askingPricesAtEvaluation = housesActiveThisMonth
+            .Where(house => house.AskingPrice > 0)
+            .Select(house => house.AskingPrice)
+            .ToArray();
         FindBestAffordableHouse();
         MakeBids();
-
         List<Transaction> completedTransactions = DeliberateBids();
         Market.LogTransactionDetails(completedTransactions);
 
-        (int priceReductions, int priceIncreases) = AdjustPricesForRemainingHouses();
-        float averageAskingPriceDuringMonth = CalculateAverageAskingPrice(housesActiveThisMonth);
+        (int unsuccessfulReductions, int unsuccessfulIncreases) =
+            AdjustPricesForRemainingHouses();
+        priceReductions += unsuccessfulReductions;
+        priceIncreases += unsuccessfulIncreases;
+
         RecordMonthlyReport(
             buyersActiveThisMonth,
             housesActiveThisMonth.Count,
             completedTransactions,
             priceReductions,
             priceIncreases,
-            averageAskingPriceDuringMonth);
-
+            askingPricesAtEvaluation);
         AddMonthlyEntrants();
     }
 
-    private void ClearMonthlyBiddingState()
+    private void ClearMonthlyState()
     {
         Market.Bids.Clear();
-
-        foreach (House house in Market.Houses)
+        foreach (House house in Market.Houses) house.Bids.Clear();
+        foreach (Buyer buyer in Market.Buyers)
         {
-            house.bids.Clear();
+            buyer.AffordableHouses.Clear();
+            buyer.WinningHouse = null;
+            buyer.SelectedEvaluation = null;
         }
     }
 
@@ -60,34 +79,53 @@ public class Simulation(
     {
         foreach (Buyer buyer in Market.Buyers)
         {
-            float monthlySalary = buyer.Salary / 12f;
-            buyer.Savings += monthlySalary * 0.20f;
+            buyer.Savings += buyer.Salary / 12f * settings.MonthlySavingsRate;
         }
     }
 
-    private void CheckAffordableHouses()
+    private void IncrementTimeOnMarket()
     {
-        foreach (Buyer buyer in Market.Buyers)
-        {
-            buyer.AffordableHouses.Clear();
+        foreach (House house in Market.Houses) house.MonthsOnMarket++;
+    }
 
-            foreach (House house in Market.Houses)
-            {
-                if (buyer.CanAfford(house))
-                {
-                    buyer.AffordableHouses.Add(house);
-                }
-            }
+    private void RecalculateEstimatedMarketValues()
+    {
+        foreach (House house in Market.Houses)
+        {
+            dataGenerator.ValuationService.EstimateMarketValue(house, Market.Transactions);
         }
+    }
+
+    private (int PriceReductions, int PriceIncreases) ApplyMarketInformedPricing()
+    {
+        int reductions = 0;
+        int increases = 0;
+        foreach (House house in Market.Houses)
+        {
+            CountDirection(
+                sellerPricingService.MoveTowardMarketTarget(house),
+                ref reductions,
+                ref increases);
+        }
+        return (reductions, increases);
     }
 
     public void FindBestAffordableHouse()
     {
         foreach (Buyer buyer in Market.Buyers)
         {
-            buyer.WinningHouse = buyer.AffordableHouses
-                .OrderByDescending(house => house.Quality)
-                .FirstOrDefault();
+            BuyerHouseEvaluation? choice = buyerDecisionService.ChooseHouse(
+                buyer,
+                Market.Houses,
+                dataGenerator.Random);
+            buyer.SelectedEvaluation = choice;
+            buyer.WinningHouse = choice?.House;
+
+            // This list remains available for existing callers, but now means
+            // houses inside the buyer's credible bidding range.
+            buyer.AffordableHouses.Clear();
+            buyer.AffordableHouses.AddRange(Market.Houses.Where(house =>
+                buyerDecisionService.CanSubmitBid(buyerDecisionService.Evaluate(buyer, house))));
         }
     }
 
@@ -95,18 +133,8 @@ public class Simulation(
     {
         foreach (Buyer buyer in Market.Buyers)
         {
-            if (buyer.WinningHouse is not House house)
-            {
-                continue;
-            }
-
-            float startingOffer = house.AskingPrice;
-            float motivationPremium = startingOffer * (buyer.Motivation / 100f);
-            float offerAmount = MathF.Min(
-                startingOffer + motivationPremium,
-                buyer.CalculateMaximumPurchasePrice());
-
-            Market.Bids.Add(new Bid(buyer, house, offerAmount));
+            if (buyer.SelectedEvaluation is not BuyerHouseEvaluation evaluation) continue;
+            Market.Bids.Add(new Bid(buyer, evaluation.House, evaluation.MaximumBid));
         }
     }
 
@@ -114,58 +142,32 @@ public class Simulation(
     {
         List<Transaction> completedTransactions = [];
         HashSet<Buyer> successfulBuyers = [];
-
         foreach (House house in Market.Houses)
         {
-            Transaction? transaction = house.DeliberateBids(dataGenerator.Random);
-            if (transaction != null && successfulBuyers.Add(transaction.Buyer))
-            {
-                completedTransactions.Add(transaction);
-            }
+            Transaction? transaction = auctionService.Settle(
+                house,
+                dataGenerator.Random,
+                successfulBuyers);
+            if (transaction is not null) completedTransactions.Add(transaction);
         }
 
         Market.Transactions.AddRange(completedTransactions);
         Market.RemoveSoldHousesAndBuyersFromMarket(completedTransactions);
-        foreach (House house in Market.Houses)
-        {
-            dataGenerator.ValuationService.EstimateMarketValue(
-                house,
-                Market.Transactions);
-        }
-
         return completedTransactions;
     }
 
     private (int PriceReductions, int PriceIncreases) AdjustPricesForRemainingHouses()
     {
-        int priceReductions = 0;
-        int priceIncreases = 0;
-
+        int reductions = 0;
+        int increases = 0;
         foreach (House house in Market.Houses)
         {
-            if (house.AskingPrice == 0)
-            {
-                continue;
-            }
-
-            if (house.bids.Count == 0)
-            {
-                house.AskingPrice = MathF.Round(
-                    house.AskingPrice * (1f - UnsoldPriceReductionRate), 2);
-                priceReductions++;
-            }
-            else if (house.bids.Count >= HighDemandBidThreshold)
-            {
-                int extraBids = house.bids.Count - HighDemandBidThreshold;
-                float priceIncreaseRate = HighDemandPriceIncreaseRate
-                    + extraBids * AdditionalPriceIncreasePerBid;
-                house.AskingPrice = MathF.Round(
-                    house.AskingPrice * (1f + priceIncreaseRate), 2);
-                priceIncreases++;
-            }
+            CountDirection(
+                sellerPricingService.AdjustUnsuccessfulListing(house),
+                ref reductions,
+                ref increases);
         }
-
-        return (priceReductions, priceIncreases);
+        return (reductions, increases);
     }
 
     private void RecordMonthlyReport(
@@ -174,12 +176,12 @@ public class Simulation(
         List<Transaction> completedTransactions,
         int priceReductions,
         int priceIncreases,
-        float averageAskingPriceDuringMonth)
+        IReadOnlyCollection<float> askingPricesAtEvaluation)
     {
-        float averageSalePrice = completedTransactions.Count == 0
-            ? 0
-            : completedTransactions.Average(transaction => transaction.SalePrice);
-        float askingPriceChange = averageAskingPriceDuringMonth - startingAverageAskingPrice;
+        float averageAskingPrice = CalculateAverage(askingPricesAtEvaluation);
+        float averageSalePrice = CalculateAverage(
+            completedTransactions.Select(transaction => transaction.SalePrice));
+        float askingPriceChange = averageAskingPrice - startingAverageAskingPrice;
         float askingPricePercentageChange = startingAverageAskingPrice == 0
             ? 0
             : askingPriceChange / startingAverageAskingPrice * 100f;
@@ -194,11 +196,20 @@ public class Simulation(
             priceIncreases,
             Market.Buyers.Count,
             Market.Houses.Count,
-            averageAskingPriceDuringMonth,
+            averageAskingPrice,
             averageSalePrice,
             startingAverageAskingPrice,
             askingPriceChange,
-            askingPricePercentageChange);
+            askingPricePercentageChange,
+            CalculateMedian(askingPricesAtEvaluation),
+            CalculateMedian(completedTransactions.Select(transaction => transaction.SalePrice)),
+            CalculateAverage(completedTransactions
+                .Where(transaction => transaction.ListPrice > 0)
+                .Select(transaction => transaction.SalePrice / transaction.ListPrice)),
+            CalculateAverage(completedTransactions.Select(
+                transaction => (float)transaction.MonthsOnMarket)),
+            completedTransactions.Sum(transaction => transaction.SalePrice),
+            Market.Houses.Count);
 
         Market.MonthlyReports.Add(report);
         report.Print();
@@ -208,18 +219,29 @@ public class Simulation(
     {
         dataGenerator.AddMonthlyEntrants(
             Market,
-            NewBuyersPerMonth,
-            NewHousesPerMonth);
+            settings.NewBuyersPerMonth,
+            settings.NewHousesPerMonth);
     }
 
-    private static float CalculateAverageAskingPrice(IEnumerable<House> houses)
+    private static void CountDirection(int direction, ref int reductions, ref int increases)
     {
-        List<House> pricedHouses = houses
-            .Where(house => house.AskingPrice > 0)
-            .ToList();
+        if (direction < 0) reductions++;
+        if (direction > 0) increases++;
+    }
 
-        return pricedHouses.Count == 0
-            ? 0
-            : pricedHouses.Average(house => house.AskingPrice);
+    private static float CalculateAverage(IEnumerable<float> values)
+    {
+        float[] materialized = values.ToArray();
+        return materialized.Length == 0 ? 0 : materialized.Average();
+    }
+
+    private static float CalculateMedian(IEnumerable<float> values)
+    {
+        float[] sorted = values.Order().ToArray();
+        if (sorted.Length == 0) return 0;
+        int middle = sorted.Length / 2;
+        return sorted.Length % 2 == 1
+            ? sorted[middle]
+            : (sorted[middle - 1] + sorted[middle]) / 2f;
     }
 }
