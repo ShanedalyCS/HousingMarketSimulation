@@ -35,7 +35,10 @@ public class Market
             if (i == 0) Console.WriteLine("====== HOUSE DETAILS ======");
 
             House h = Houses[i];
-            Console.WriteLine(" Name: " + h.Name + "| Value (k): " + h.value + "| Tech: " + h.technology + "| Age: " + h.age + "| Size: " + h.size);
+            Console.WriteLine(
+                $" Name: {h.Name}| Asking price (k): {h.AskingPrice}" +
+                $"| Base value (k): {h.BaseValue}| Age: {h.AgeYears}" +
+                $"| Floor area: {h.FloorAreaSquareMetres}");
 
             if (i == Houses.Count() - 1) Console.WriteLine("====== END OF HOUSES ======");
         }
@@ -53,7 +56,7 @@ public class Market
     {
         foreach (Transaction transaction in transactions)
         {
-            Console.WriteLine("TRANSACTION : " + transaction.Buyer.Name + " bought " + transaction.House.Name + " for " + transaction.SalePrice + " K");
+            Console.WriteLine("    TRANSACTION : " + transaction.Buyer.Name + " bought " + transaction.House.Name + " for " + transaction.SalePrice + " K");
         }
     }
 

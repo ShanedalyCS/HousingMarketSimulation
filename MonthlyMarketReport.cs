@@ -6,7 +6,6 @@ public class MonthlyMarketReport(
     int transactionsCompleted,
     int priceReductions,
     int priceIncreases,
-    int priceDiscoveries,
     int buyersRemaining,
     int housesRemaining,
     float averageAskingPriceDuringMonth,
@@ -22,7 +21,6 @@ public class MonthlyMarketReport(
     public int TransactionsCompleted { get; } = transactionsCompleted;
     public int PriceReductions { get; } = priceReductions;
     public int PriceIncreases { get; } = priceIncreases;
-    public int PriceDiscoveries { get; } = priceDiscoveries;
     public int BuyersRemaining { get; } = buyersRemaining;
     public int HousesRemaining { get; } = housesRemaining;
     public float AverageAskingPriceDuringMonth { get; } = averageAskingPriceDuringMonth;
@@ -37,7 +35,7 @@ public class MonthlyMarketReport(
         Console.WriteLine($"Buyers / houses active this month: {BuyersActiveDuringMonth} / {HousesActiveDuringMonth}");
         Console.WriteLine($"Bids placed: {BidsPlaced}");
         Console.WriteLine($"Transactions completed: {TransactionsCompleted}");
-        Console.WriteLine($"Price reductions / increases / discoveries: {PriceReductions} / {PriceIncreases} / {PriceDiscoveries}");
+        Console.WriteLine($"Price reductions / increases: {PriceReductions} / {PriceIncreases}");
         Console.WriteLine($"Buyers / houses remaining: {BuyersRemaining} / {HousesRemaining}");
         Console.WriteLine($"Average asking price of houses active this month: {AverageAskingPriceDuringMonth:F2} K");
         Console.WriteLine($"Average sale price: {AverageSalePrice:F2} K");

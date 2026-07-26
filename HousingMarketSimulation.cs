@@ -11,9 +11,6 @@ public class HousingMarketSimulation
         Console.WriteLine("How many houses?");
         int numberOfHouses = int.Parse(Console.ReadLine()!);
 
-        Console.WriteLine("Use zero-price market discovery mode? (y/n)");
-        bool usePriceDiscoveryMode = Console.ReadLine()?.Trim().ToLowerInvariant() == "y";
-
         Console.WriteLine("Optional random seed (press Enter for a random run):");
         string? seedInput = Console.ReadLine();
         Random random = int.TryParse(seedInput, out int seed)
@@ -21,15 +18,11 @@ public class HousingMarketSimulation
             : new Random();
         DataGenerator dataGenerator = new(random);
 
-        dataGenerator.GenerateData(
-            numberOfBuyers,
-            numberOfHouses,
-            market,
-            usePriceDiscoveryMode);
+        dataGenerator.GenerateData(numberOfBuyers, numberOfHouses, market);
 
 
 
-        Simulation simulation = new(market, dataGenerator, usePriceDiscoveryMode);
+        Simulation simulation = new(market, dataGenerator);
 
         Console.WriteLine("How many months to simulate?");
         int numberOfTicks = int.Parse(Console.ReadLine()!);

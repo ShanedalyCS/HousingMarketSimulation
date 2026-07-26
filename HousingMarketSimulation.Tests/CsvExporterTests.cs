@@ -13,7 +13,6 @@ public class CsvExporterTests
             transactionsCompleted: 1,
             priceReductions: 1,
             priceIncreases: 0,
-            priceDiscoveries: 0,
             buyersRemaining: 1,
             housesRemaining: 2,
             averageAskingPriceDuringMonth: 98.5f,

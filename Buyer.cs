@@ -100,7 +100,7 @@ public class Buyer(string name, int age, float salary, float motivation, float s
 
     public bool CanAfford(House house)
     {
-        return house.Value <= CalculateMaximumPurchasePrice();
+        return house.AskingPrice <= CalculateMaximumPurchasePrice();
     }
 
     public float CalculateMaximumPurchasePrice()

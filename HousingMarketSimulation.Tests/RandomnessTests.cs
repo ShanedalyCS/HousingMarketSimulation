@@ -28,6 +28,8 @@ public class RandomnessTests
 
     private static string HouseSnapshot(House house)
     {
-        return $"{house.Name}|{house.Value}|{house.Technology}|{house.Age}|{house.Area}|{house.Size}";
+        return $"{house.Name}|{house.BaseValue}|{house.AskingPrice}|" +
+            $"{house.BuildQuality}|{house.Location}|{house.AgeYears}|" +
+            $"{house.FloorAreaSquareMetres}|{house.PlotSizeSquareMetres}";
     }
 }
