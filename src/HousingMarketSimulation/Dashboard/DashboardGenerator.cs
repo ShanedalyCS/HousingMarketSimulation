@@ -23,7 +23,7 @@ public static class DashboardGenerator
             throw new InvalidOperationException("Dashboard template is missing its data placeholder.");
 
         DashboardData data = new(
-            "Housing Market Simulation",
+            "Agent-Based Housing Market Simulation",
             results.Select(result => result.DashboardData).ToArray());
         string json = DashboardJsonExporter.Serialize(data);
         string html = template.Replace(
@@ -32,8 +32,10 @@ public static class DashboardGenerator
             StringComparison.Ordinal);
 
         Directory.CreateDirectory(outputDirectory);
-        string outputPath = Path.Combine(outputDirectory, "dashboard.html");
-        File.WriteAllText(outputPath, html);
-        return outputPath;
+        string indexPath = Path.Combine(outputDirectory, "index.html");
+        string compatibilityPath = Path.Combine(outputDirectory, "dashboard.html");
+        File.WriteAllText(indexPath, html);
+        File.WriteAllText(compatibilityPath, html);
+        return indexPath;
     }
 }

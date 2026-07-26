@@ -3,7 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Housing Market Simulation · Market Analytics</title>
+  <meta name="description" content="Explore deterministic housing-market scenarios, transaction-driven prices, affordability, supply, and liquidity in an interactive agent-based simulation.">
+  <meta name="theme-color" content="#030303">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Agent-Based Housing Market Simulation">
+  <meta property="og:description" content="An interactive dashboard comparing price dynamics, affordability, supply, and liquidity across deterministic 120-month housing-market scenarios.">
+  <title>Agent-Based Housing Market Simulation · Interactive Analytics</title>
   <style>
     :root {
       color-scheme: dark;
@@ -210,6 +215,25 @@
         var(--panel);
     }
     .explanation strong { color: var(--accent); }
+    .methodology-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .methodology-item {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, .18);
+    }
+    .methodology-item strong {
+      display: block;
+      color: var(--text);
+      font-size: 12px;
+      margin-bottom: 3px;
+    }
+    .methodology-item span { color: var(--muted); font-size: 12px; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 760px; }
     th, td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: right; }
@@ -240,10 +264,15 @@
     .grid-line { stroke: var(--grid); stroke-width: 1; }
     .axis-line { stroke: rgba(255, 255, 255, .26); stroke-width: 1; }
     .footer { color: var(--muted); text-align: center; font-size: 12px; margin-top: 24px; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
     @media (max-width: 1050px) {
       .topbar { grid-template-columns: 1fr; }
       .control-panel { min-width: 0; }
       .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .methodology-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 760px) {
       .shell { width: min(100% - 18px, 1560px); padding-top: 18px; }
@@ -251,6 +280,7 @@
       .card.wide, .explanation { grid-column: auto; }
       .kpi-grid { grid-template-columns: 1fr; }
       .chart { min-height: 260px; }
+      .methodology-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -259,8 +289,8 @@
     <header class="topbar">
       <div>
         <div class="eyebrow">Market Analytics · Constant Quality</div>
-        <h1 id="project-title">Housing Market Simulation</h1>
-        <p class="subtitle">An offline, reproducible view of price formation, affordability, liquidity, and property-mix effects across simulated market conditions.</p>
+        <h1 id="project-title">Agent-Based Housing Market Simulation</h1>
+        <p class="subtitle">Explore how autonomous buyers, constrained affordability, and limited housing supply produce transaction-driven price dynamics over 120 simulated months.</p>
       </div>
       <div class="control-panel" aria-label="Scenario controls">
         <label for="scenario-select" class="eyebrow">Selected scenario</label>
@@ -293,7 +323,7 @@
 
       <aside class="card explanation">
         <h2>Why raw averages can mislead</h2>
-        <p class="card-copy"><strong>Raw average prices can change because the types of houses sold or remaining change.</strong> The constant-quality index controls for this by comparing each sale price with the house’s fundamental <code>BaseValue</code>. It is a simulation-specific benchmark, not an official hedonic index.</p>
+        <p class="card-copy"><strong>Raw average prices change when the mix of properties changes.</strong> The quality-adjusted index compares each sale with the house’s modeled fundamental value, helping separate market movement from property-composition effects.</p>
       </aside>
 
       <section class="card wide">
@@ -330,6 +360,22 @@
         <div class="card-header"><div><h2>Location analysis</h2><p class="card-copy">Scenario-wide completed-sale evidence by location segment.</p></div></div>
         <div id="location-analysis" class="table-wrap"></div>
       </section>
+
+      <aside class="card wide" aria-labelledby="methodology-title">
+        <div class="card-header">
+          <div>
+            <h2 id="methodology-title">Methodology at a glance</h2>
+            <p class="card-copy">Transparent analytical rules make every scenario reproducible and every unavailable period explicit.</p>
+          </div>
+        </div>
+        <div class="methodology-grid">
+          <div class="methodology-item"><strong>Seeded scenarios</strong><span>Fixed random seeds reproduce agents, bids, transactions, and analytics.</span></div>
+          <div class="methodology-item"><strong>Market factor</strong><span>Median <code>SalePrice / BaseValue</code> across eligible completed transactions.</span></div>
+          <div class="methodology-item"><strong>Rolling evidence</strong><span>A trailing 12-month window reduces sensitivity to a single month.</span></div>
+          <div class="methodology-item"><strong>Comparable index</strong><span>Each scenario is independently rebased to 100 at its first valid period.</span></div>
+          <div class="methodology-item"><strong>Defined boundaries</strong><span>Sparse periods remain unavailable; the model is explanatory, not empirically calibrated.</span></div>
+        </div>
+      </aside>
     </main>
 
     <p class="footer">Generated locally from deterministic simulation output · no network connection required</p>
