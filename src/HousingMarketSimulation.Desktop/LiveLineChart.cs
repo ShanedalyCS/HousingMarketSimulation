@@ -5,7 +5,8 @@ namespace HousingMarketSimulation.Desktop;
 internal sealed record LiveChartSeries(
     string Name,
     Color Color,
-    Func<MonthlyAnalyticsSnapshot, float?> ValueSelector);
+    Func<MonthlyAnalyticsSnapshot, float?> ValueSelector,
+    DashStyle LineStyle = DashStyle.Solid);
 
 internal sealed class LiveLineChart : Control
 {
@@ -161,7 +162,10 @@ internal sealed class LiveLineChart : Control
         const float y = 51;
         foreach (LiveChartSeries item in series)
         {
-            using Pen pen = new(item.Color, 3);
+            using Pen pen = new(item.Color, 3)
+            {
+                DashStyle = item.LineStyle
+            };
             graphics.DrawLine(pen, x, y + 7, x + 18, y + 7);
             x += 24;
             float? latest = snapshots.LastOrDefault() is { } snapshot
@@ -236,7 +240,8 @@ internal sealed class LiveLineChart : Control
         {
             StartCap = LineCap.Round,
             EndCap = LineCap.Round,
-            LineJoin = LineJoin.Round
+            LineJoin = LineJoin.Round,
+            DashStyle = item.LineStyle
         };
         List<PointF> segment = [];
         foreach (MonthlyAnalyticsSnapshot snapshot in snapshots)

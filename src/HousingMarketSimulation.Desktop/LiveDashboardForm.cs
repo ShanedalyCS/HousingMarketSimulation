@@ -298,13 +298,10 @@ public sealed class LiveDashboardForm : Form
                 BlueColor,
                 snapshot => snapshot.ActiveBuyers),
             new LiveChartSeries(
-                "Active listings",
+                "Houses on market",
                 GoldColor,
-                snapshot => snapshot.ActiveListings),
-            new LiveChartSeries(
-                "Ending inventory",
-                AccentColor,
-                snapshot => snapshot.EndingInventory));
+                snapshot => snapshot.ActiveListings,
+                System.Drawing.Drawing2D.DashStyle.Dash));
         activityChart.ConfigureSeries(
             new LiveChartSeries(
                 "Bids",

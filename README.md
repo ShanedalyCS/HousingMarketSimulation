@@ -178,6 +178,11 @@ a run at month 10 ends at M10 and a long run continues scaling through M1200
 rather than reserving the configured duration in advance. The **Supply vs
 price** view is a scatter chart with active house listings on the x-axis and
 average asking price on the y-axis; each point represents one simulated month.
+The **Supply & demand** view compares active buyers with the houses available at
+the start of each month's trading. Ending inventory remains available in the
+analytics exports but is omitted from this view because it is simply the
+post-transaction, pre-new-listing balance for the same month. Houses on market
+use a dashed gold line so both series remain visible when their values coincide.
 
 The desktop app uses `LiveSimulationSession`, which delegates directly to the
 existing `Simulation.RunTick()` method; it does not reimplement market logic.
