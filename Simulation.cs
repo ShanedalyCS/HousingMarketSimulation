@@ -33,11 +33,13 @@ public class Simulation
         ClearMonthlyState();
         int buyersActiveThisMonth = Market.Buyers.Count;
         List<House> housesActiveThisMonth = [.. Market.Houses];
+        Dictionary<House, float> startingAskingPrices = housesActiveThisMonth
+            .ToDictionary(house => house, house => house.AskingPrice);
 
         UpdateBuyerFinances();
         IncrementTimeOnMarket();
         RecalculateEstimatedMarketValues();
-        (int priceReductions, int priceIncreases) = ApplyMarketInformedPricing();
+        ApplyMarketInformedPricing();
 
         float[] askingPricesAtEvaluation = housesActiveThisMonth
             .Where(house => house.AskingPrice > 0)
@@ -48,17 +50,16 @@ public class Simulation
         List<Transaction> completedTransactions = DeliberateBids();
         Market.LogTransactionDetails(completedTransactions);
 
-        (int unsuccessfulReductions, int unsuccessfulIncreases) =
-            AdjustPricesForRemainingHouses();
-        priceReductions += unsuccessfulReductions;
-        priceIncreases += unsuccessfulIncreases;
+        AdjustPricesForRemainingHouses();
+        PriceMovementSummary priceMovements =
+            PriceMovementCounter.CountNetMovements(startingAskingPrices);
 
         RecordMonthlyReport(
             buyersActiveThisMonth,
             housesActiveThisMonth.Count,
             completedTransactions,
-            priceReductions,
-            priceIncreases,
+            priceMovements.Reductions,
+            priceMovements.Increases,
             askingPricesAtEvaluation);
         AddMonthlyEntrants();
     }
@@ -96,18 +97,12 @@ public class Simulation
         }
     }
 
-    private (int PriceReductions, int PriceIncreases) ApplyMarketInformedPricing()
+    private void ApplyMarketInformedPricing()
     {
-        int reductions = 0;
-        int increases = 0;
         foreach (House house in Market.Houses)
         {
-            CountDirection(
-                sellerPricingService.MoveTowardMarketTarget(house),
-                ref reductions,
-                ref increases);
+            sellerPricingService.MoveTowardMarketTarget(house);
         }
-        return (reductions, increases);
     }
 
     public void FindBestAffordableHouse()
@@ -156,18 +151,12 @@ public class Simulation
         return completedTransactions;
     }
 
-    private (int PriceReductions, int PriceIncreases) AdjustPricesForRemainingHouses()
+    private void AdjustPricesForRemainingHouses()
     {
-        int reductions = 0;
-        int increases = 0;
         foreach (House house in Market.Houses)
         {
-            CountDirection(
-                sellerPricingService.AdjustUnsuccessfulListing(house),
-                ref reductions,
-                ref increases);
+            sellerPricingService.AdjustUnsuccessfulListing(house);
         }
-        return (reductions, increases);
     }
 
     private void RecordMonthlyReport(
@@ -208,8 +197,7 @@ public class Simulation
                 .Select(transaction => transaction.SalePrice / transaction.ListPrice)),
             CalculateAverage(completedTransactions.Select(
                 transaction => (float)transaction.MonthsOnMarket)),
-            completedTransactions.Sum(transaction => transaction.SalePrice),
-            Market.Houses.Count);
+            completedTransactions.Sum(transaction => transaction.SalePrice));
 
         Market.MonthlyReports.Add(report);
         report.Print();
@@ -221,12 +209,6 @@ public class Simulation
             Market,
             settings.NewBuyersPerMonth,
             settings.NewHousesPerMonth);
-    }
-
-    private static void CountDirection(int direction, ref int reductions, ref int increases)
-    {
-        if (direction < 0) reductions++;
-        if (direction > 0) increases++;
     }
 
     private static float CalculateAverage(IEnumerable<float> values)

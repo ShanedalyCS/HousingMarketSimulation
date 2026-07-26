@@ -18,3 +18,4 @@ obj/
 *.log
 *.tmp
 monthly-market-reports.csv
+scenario-output/

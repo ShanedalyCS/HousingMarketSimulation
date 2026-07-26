@@ -13,11 +13,16 @@ public class SimulationLifecycleTests
         House house = TestHouseFactory.Create(askingPrice: 100);
         market.Houses.Add(house);
 
-        new Simulation(market, new DataGenerator(new Random(1)), NoEntrants).RunTick();
+        SimulationSettings settings = new()
+        {
+            NewBuyersPerMonth = 0,
+            NewHousesPerMonth = 0,
+            MaximumMonthlyMarketValueAdjustment = 0
+        };
+        new Simulation(market, new DataGenerator(new Random(1)), settings).RunTick();
 
-        // Market-target movement is capped at 3%, followed by the configured 2% no-bid reduction.
-        Assert.InRange(house.AskingPrice, 94.99f, 100.99f);
-        Assert.True(Assert.Single(market.MonthlyReports).PriceReductions >= 1);
+        Assert.Equal(98, house.AskingPrice);
+        Assert.Equal(1, Assert.Single(market.MonthlyReports).PriceReductions);
         Assert.Equal(1, house.MonthsOnMarket);
     }
 
@@ -36,7 +41,6 @@ public class SimulationLifecycleTests
         Assert.Equal(1, report.HousesActiveDuringMonth);
         Assert.Equal(0, report.BuyersRemaining);
         Assert.Equal(1, report.HousesRemaining);
-        Assert.Equal(report.HousesRemaining, report.MarketInventoryEnd);
         Assert.InRange(report.AverageAskingPriceDuringMonth, 97, 103);
         Assert.Equal(report.AverageAskingPriceDuringMonth, report.MedianAskingPrice);
         Assert.Single(market.Buyers);
@@ -75,6 +79,6 @@ public class SimulationLifecycleTests
         Assert.Equal(transaction.SalePrice, report.TotalTransactionValue);
         Assert.Equal(transaction.SalePrice / transaction.ListPrice, report.AverageSaleToListRatio);
         Assert.Equal(1, report.AverageTimeOnMarketForSoldHouses);
-        Assert.Equal(0, report.MarketInventoryEnd);
+        Assert.Equal(0, report.HousesRemaining);
     }
 }

@@ -38,7 +38,6 @@ public class House
     public float PlotSizeSquareMetres { get; set; }
     public float AgeYears { get; set; }
     public List<Bid> Bids { get; } = [];
-    public List<Bid> bids => Bids;
 
     public float Quality =>
         FloorAreaSquareMetres + PlotSizeSquareMetres / 4f + (int)BuildQuality * 10f;

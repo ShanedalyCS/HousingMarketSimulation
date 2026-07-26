@@ -17,8 +17,7 @@ public class MonthlyMarketReport(
     float medianSalePrice = 0,
     float averageSaleToListRatio = 0,
     float averageTimeOnMarketForSoldHouses = 0,
-    float totalTransactionValue = 0,
-    int marketInventoryEnd = 0)
+    float totalTransactionValue = 0)
 {
     public int Month { get; } = month;
     public int BuyersActiveDuringMonth { get; } = buyersActiveDuringMonth;
@@ -39,7 +38,6 @@ public class MonthlyMarketReport(
     public float AverageSaleToListRatio { get; } = averageSaleToListRatio;
     public float AverageTimeOnMarketForSoldHouses { get; } = averageTimeOnMarketForSoldHouses;
     public float TotalTransactionValue { get; } = totalTransactionValue;
-    public int MarketInventoryEnd { get; } = marketInventoryEnd;
 
     public void Print()
     {
@@ -47,7 +45,7 @@ public class MonthlyMarketReport(
         Console.WriteLine($"Buyers / houses active this month: {BuyersActiveDuringMonth} / {HousesActiveDuringMonth}");
         Console.WriteLine($"Bids / transactions: {BidsPlaced} / {TransactionsCompleted}");
         Console.WriteLine($"Price reductions / increases: {PriceReductions} / {PriceIncreases}");
-        Console.WriteLine($"Buyers remaining / ending inventory: {BuyersRemaining} / {MarketInventoryEnd}");
+        Console.WriteLine($"Buyers remaining / houses remaining: {BuyersRemaining} / {HousesRemaining}");
         Console.WriteLine($"Average / median asking price: {AverageAskingPriceDuringMonth:F2} / {MedianAskingPrice:F2} K");
         Console.WriteLine($"Average / median sale price: {AverageSalePrice:F2} / {MedianSalePrice:F2} K");
         Console.WriteLine($"Sale-to-list ratio: {AverageSaleToListRatio:P2}");

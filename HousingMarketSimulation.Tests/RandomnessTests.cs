@@ -75,6 +75,6 @@ public class RandomnessTests
             .Concat(market.MonthlyReports.Select(report =>
                 $"R|{report.Month}|{report.BidsPlaced}|{report.TransactionsCompleted}|" +
                 $"{report.MedianAskingPrice}|{report.MedianSalePrice}|" +
-                $"{report.TotalTransactionValue}|{report.MarketInventoryEnd}")));
+                $"{report.TotalTransactionValue}|{report.HousesRemaining}")));
     }
 }

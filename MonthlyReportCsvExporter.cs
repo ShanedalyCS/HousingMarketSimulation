@@ -12,7 +12,7 @@ public static class MonthlyReportCsvExporter
             "BuyersRemaining,HousesRemaining,AverageAskingPriceDuringMonth,AverageSalePrice," +
             "StartingAverageAskingPrice,AskingPriceChange,AskingPricePercentageChange," +
             "MedianAskingPrice,MedianSalePrice,AverageSaleToListRatio," +
-            "AverageTimeOnMarketForSoldHouses,TotalTransactionValue,MarketInventoryEnd");
+            "AverageTimeOnMarketForSoldHouses,TotalTransactionValue");
 
         foreach (MonthlyMarketReport report in reports)
         {
@@ -36,8 +36,7 @@ public static class MonthlyReportCsvExporter
                 report.MedianSalePrice.ToString(CultureInfo.InvariantCulture),
                 report.AverageSaleToListRatio.ToString(CultureInfo.InvariantCulture),
                 report.AverageTimeOnMarketForSoldHouses.ToString(CultureInfo.InvariantCulture),
-                report.TotalTransactionValue.ToString(CultureInfo.InvariantCulture),
-                report.MarketInventoryEnd.ToString(CultureInfo.InvariantCulture)
+                report.TotalTransactionValue.ToString(CultureInfo.InvariantCulture)
             ];
 
             csv.AppendLine(string.Join(',', values));

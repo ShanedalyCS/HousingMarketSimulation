@@ -163,6 +163,22 @@ seller targets rather than an artificial bid-count branch.
 comparable weights and similarity threshold, similarity component weights,
 sample-size cap, and outlier bounds. No dependency-injection framework is
 required; settings can be passed directly to the services or `Simulation`.
+Both settings types reject non-finite values, invalid rate ranges, inconsistent
+bounds, and incomplete multiplier dictionaries instead of silently correcting
+them.
+
+Interactive mode offers a quick default path:
+
+```text
+Use default simulation settings? (y/n) [y]:
+```
+
+Press Enter or enter `y` to use the documented defaults. Enter `n` to configure
+monthly entrant counts, no-bid reduction, maximum market-value movement,
+below-asking tolerance, auction increment, rejected-bid adjustment, and monthly
+savings. Every prompt shows its default; Enter accepts it. Percentages are
+entered as user-facing values from 0 to 100 and converted to decimal rates.
+Invalid text or out-of-range input is explained and prompted again.
 
 ## Monthly reports and CSV snapshots
 
@@ -172,8 +188,7 @@ Every report preserves the original fields and adds:
 - median sale price;
 - average sale-to-list ratio;
 - average time on market for sold houses;
-- total transaction value;
-- ending market inventory.
+- total transaction value.
 
 Snapshot definitions are:
 
@@ -188,10 +203,12 @@ Snapshot definitions are:
   at bidding time, averaged across completed sales;
 - **time on market**: completed sales' `MonthsOnMarket`, averaged in months;
 - **total transaction value**: sum of the month's sale prices;
-- **remaining buyers/houses and ending inventory**: after sales and unsuccessful
-  price adjustments, before new entrants;
-- **price reductions/increases**: listings whose price moved in each direction
-  during either market-informed or unsuccessful-listing adjustment;
+- **remaining buyers/houses**: after sales and unsuccessful price adjustments,
+  before new entrants; `HousesRemaining` is the single ending-inventory metric;
+- **price reductions/increases**: unique listings whose final asking price is
+  below or above its price at the start of the tick. Each originally active
+  listing, including a sold one, is counted at most once according to its net
+  movement after all monthly adjustments;
 - **change since start**: evaluation-time average asking price compared with the
   initial market's average asking price.
 
@@ -205,14 +222,45 @@ dotnet run
 ```
 
 The program asks for initial buyers, initial houses, an optional integer seed,
-and the number of months. Reusing the same seed and inputs reproduces generation,
-preferences, choices, ties, transactions, and reports.
+the number of months, and whether to use default simulation settings. Counts and
+the seed are validated without crashing on invalid text. Reusing the same seed
+and settings reproduces generation, preferences, choices, ties, transactions,
+and reports.
+
+### Reproducible scenarios
+
+Run the balanced, excess-demand, and excess-supply 120-month scenarios without
+interactive prompts:
+
+```powershell
+dotnet run -- --scenarios
+```
+
+The command prints a concise comparison and writes deterministic report files:
+
+```text
+scenario-output/balanced-market.csv
+scenario-output/excess-demand-market.csv
+scenario-output/excess-supply-market.csv
+```
+
+Scenario mode does not overwrite `monthly-market-reports.csv`.
 
 Run the complete xUnit suite with:
 
 ```powershell
 dotnet test HousingMarketSimulation.slnx
 ```
+
+The suite includes targeted reporting and settings tests plus 120-month sanity
+checks. Long-run validation covers finite and non-negative monetary values,
+transaction/report consistency, unique sold houses and successful buyers,
+movement-count bounds, deterministic replay, and all three supplied scenarios.
+It deliberately avoids narrow price-range assertions that would prevent
+legitimate emergent behavior.
+
+GitHub Actions runs restore, Release build, and the complete Release test suite
+on pushes to `main` or `master` and pull requests targeting `main`.
 
 ## Modelling limitations
 

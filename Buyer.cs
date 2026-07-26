@@ -29,15 +29,6 @@ public class Buyer
     public House? WinningHouse { get; set; }
     public BuyerHouseEvaluation? SelectedEvaluation { get; internal set; }
 
-    // Kept as read/write aliases for callers using the original public API.
-    public int age { get => Age; set => Age = value; }
-    public float salary { get => Salary; set => Salary = value; }
-    public float motivation { get => Motivation; set => Motivation = value; }
-    public float savings { get => Savings; set => Savings = value; }
-    public bool hasFamily { get => HasFamily; set => HasFamily = value; }
-    public List<House> affordableHouses => AffordableHouses;
-    public House? winningHouse { get => WinningHouse; set => WinningHouse = value; }
-
     public bool CanAfford(House house) =>
         house.AskingPrice <= CalculateMaximumPurchasePrice();
 

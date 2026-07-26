@@ -1,6 +1,12 @@
-public sealed class HouseValuationService(ValuationSettings? settings = null)
+public sealed class HouseValuationService
 {
-    public ValuationSettings Settings { get; } = settings ?? new ValuationSettings();
+    public HouseValuationService(ValuationSettings? settings = null)
+    {
+        Settings = settings ?? new ValuationSettings();
+        Settings.Validate();
+    }
+
+    public ValuationSettings Settings { get; }
 
     public float CalculateBaseValue(House house)
     {

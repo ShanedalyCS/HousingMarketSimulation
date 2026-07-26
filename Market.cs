@@ -22,7 +22,10 @@ public class Market
             if (i == 0) Console.WriteLine("====== BUYER DETAILS ======");
             Buyer b = Buyers[i];
 
-            Console.WriteLine("Name: " + b.Name + "| Age: " + b.age + "| Salary (k): " + b.salary + "| Motivation: " + b.motivation + "| Savings (k): " + b.savings + "| Has Family: " + b.hasFamily);
+            Console.WriteLine(
+                "Name: " + b.Name + "| Age: " + b.Age + "| Salary (k): " + b.Salary +
+                "| Motivation: " + b.Motivation + "| Savings (k): " + b.Savings +
+                "| Has Family: " + b.HasFamily);
             if (i == Buyers.Count - 1) Console.WriteLine("====== END OF BUYERS ======");
         }
     }
@@ -48,7 +51,9 @@ public class Market
     {
         foreach (Bid bid in Bids)
         {
-            Console.WriteLine(bid.buyer.Name + " placed a bid on " + bid.house.Name + " for " + bid.offerAmount + " K");
+            Console.WriteLine(
+                bid.Buyer.Name + " placed a bid on " + bid.House.Name +
+                " for " + bid.OfferAmount + " K");
         }
     }
 
