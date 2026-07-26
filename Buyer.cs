@@ -1,114 +1,42 @@
-public class Buyer(string name, int age, float salary, float motivation, float savings, bool hasFamily)
+public class Buyer
 {
-    private string name = name;
-    public int age = age;
-    public float salary = salary;
-    public float motivation = motivation;
-    public float savings = savings;
-    public bool hasFamily = hasFamily;
-
-    public List<House> affordableHouses = [];
-
-    public House? winningHouse;
-
-    public List<House> AffordableHouses
+    public Buyer(
+        string name,
+        int age,
+        float salary,
+        float motivation,
+        float savings,
+        bool hasFamily,
+        BuyerPreferences? preferences = null)
     {
-        get
-        {
-            return affordableHouses;
-        }
-
+        Name = name;
+        Age = age;
+        Salary = salary;
+        Motivation = motivation;
+        Savings = savings;
+        HasFamily = hasFamily;
+        Preferences = preferences ?? BuyerPreferences.Balanced;
     }
 
-    public House? WinningHouse
-    {
-        get { return winningHouse; }
-        set { this.winningHouse = value; }
-    }
+    public string Name { get; set; }
+    public int Age { get; set; }
+    public float Salary { get; set; }
+    public float Motivation { get; set; }
+    public float Savings { get; set; }
+    public bool HasFamily { get; set; }
+    public BuyerPreferences Preferences { get; }
+    public List<House> AffordableHouses { get; } = [];
+    public House? WinningHouse { get; set; }
+    public BuyerHouseEvaluation? SelectedEvaluation { get; internal set; }
 
-    public string Name
-    {
-        get
-        {
-            return name;
-        }
-        set
-        {
-            name = value;
-        }
-    }
-
-    public int Age
-    {
-        get
-        {
-            return age;
-        }
-        set
-        {
-            age = value;
-        }
-    }
-
-    public float Salary
-    {
-        get
-        {
-            return salary;
-        }
-        set
-        {
-            salary = value;
-        }
-    }
-
-    public float Motivation
-    {
-        get
-        {
-            return motivation;
-        }
-        set
-        {
-            motivation = value;
-        }
-    }
-
-    public float Savings
-    {
-        get
-        {
-            return savings;
-        }
-        set
-        {
-            savings = value;
-        }
-    }
-
-    public bool HasFamily
-    {
-        get
-        {
-            return hasFamily;
-        }
-        set
-        {
-            hasFamily = value;
-        }
-    }
-
-    public bool CanAfford(House house)
-    {
-        return house.AskingPrice <= CalculateMaximumPurchasePrice();
-    }
+    public bool CanAfford(House house) =>
+        house.AskingPrice <= CalculateMaximumPurchasePrice();
 
     public float CalculateMaximumPurchasePrice()
     {
         const float depositRate = 0.20f;
         float maximumPriceFromDeposit = Savings / depositRate;
         float maximumPriceFromTotalFunds = Savings + Salary * 4f;
-
         return MathF.Min(maximumPriceFromDeposit, maximumPriceFromTotalFunds);
     }
 }

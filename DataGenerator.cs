@@ -63,15 +63,23 @@ public class DataGenerator
             name = names[random.Next(names.Count)];
         }
 
-        int age = random.Next(70);
+        int age = random.Next(18, 71);
         float salary = random.Next(30, 200);
-        float motivation = random.Next(10);
+        float motivation = MathF.Round((float)random.NextDouble() * 10f, 2);
+        float savings = MathF.Round(
+            salary * (0.25f + (float)random.NextDouble()),
+            2);
+        bool hasFamily = age >= 22 && random.NextDouble() < 0.45;
+        BuyerPreferences preferences = BuyerPreferences.Generate(random, hasFamily);
 
-        float savings = salary / 2;
-
-        bool hasFamily = true;
-
-        Buyer buyer = new(name, age, salary, motivation, savings, hasFamily);
+        Buyer buyer = new(
+            name,
+            age,
+            salary,
+            motivation,
+            savings,
+            hasFamily,
+            preferences);
 
         market.Buyers.Add(buyer);
 
@@ -90,7 +98,8 @@ public class DataGenerator
             (PropertyQuality)random.Next(Enum.GetValues<PropertyQuality>().Length),
             (LocationDesirability)random.Next(Enum.GetValues<LocationDesirability>().Length),
             valuationService,
-            random);
+            random,
+            market.Transactions);
 
         nextHouseId++;
 

@@ -1,20 +1,14 @@
 public class Bid
 {
-    public House house;
-    public Buyer buyer;
-    public float offerAmount;
-
     public Bid(Buyer buyer, House house, float offerAmount)
     {
-        this.house = house;
-        this.buyer = buyer;
-        this.offerAmount = offerAmount;
-
-        MakeBid(house);
+        Buyer = buyer;
+        House = house;
+        OfferAmount = MathF.Round(offerAmount, 2);
+        house.Bids.Add(this);
     }
 
-    public void MakeBid(House house)
-    {
-        house.bids.Add(this);
-    }
+    public House House { get; }
+    public Buyer Buyer { get; }
+    public float OfferAmount { get; }
 }

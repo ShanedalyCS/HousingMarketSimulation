@@ -1,0 +1,35 @@
+name: .NET
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore HousingMarketSimulation.slnx
+
+      - name: Build
+        run: dotnet build HousingMarketSimulation.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test HousingMarketSimulation.slnx --configuration Release --no-build

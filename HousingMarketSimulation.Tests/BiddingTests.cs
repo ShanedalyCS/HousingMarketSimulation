@@ -1,76 +1,88 @@
 public class BiddingTests
 {
     [Fact]
-    public void HighestValidBidWins()
+    public void SingleValidBidderPurchasesAtAskingPrice()
     {
-        House house = CreateHouse(100);
-        Buyer lowerBidder = CreateBuyer("Lower");
-        Buyer higherBidder = CreateBuyer("Higher");
-        _ = new Bid(lowerBidder, house, 101);
-        _ = new Bid(higherBidder, house, 105);
+        House house = TestHouseFactory.Create(100);
+        Buyer buyer = CreateBuyer("Buyer");
+        _ = new Bid(buyer, house, 105);
 
-        Transaction? transaction = house.DeliberateBids(new Random(1));
+        Transaction? transaction = new AuctionService().Settle(house, new Random(1));
 
         Assert.NotNull(transaction);
-        Assert.Same(higherBidder, transaction.Buyer);
-        Assert.Equal(105f, transaction.SalePrice);
+        Assert.Same(buyer, transaction.Buyer);
+        Assert.Equal(100f, transaction.SalePrice);
     }
 
     [Fact]
     public void BidBelowAskingPriceIsRejected()
     {
-        House house = CreateHouse(100);
+        House house = TestHouseFactory.Create(100);
         _ = new Bid(CreateBuyer("Buyer"), house, 99);
 
-        Assert.Null(house.DeliberateBids(new Random(1)));
+        Assert.Null(new AuctionService().Settle(house, new Random(1)));
     }
 
     [Fact]
-    public void BidsUseAskingPriceThatExistedWhenSubmitted()
+    public void MultipleBiddersUseSecondPricePlusIncrement()
     {
-        Market market = new();
-        House house = CreateHouse(100);
-        market.Houses.Add(house);
-        market.Buyers.Add(CreateBuyer("A", motivation: 0));
-        market.Buyers.Add(CreateBuyer("B", motivation: 0));
-        market.Buyers.Add(CreateBuyer("C", motivation: 0));
-        Simulation simulation = new(market, new DataGenerator(new Random(10)));
+        House house = TestHouseFactory.Create(100);
+        Buyer winner = CreateBuyer("Winner");
+        _ = new Bid(CreateBuyer("Lower"), house, 104);
+        _ = new Bid(winner, house, 110);
 
-        simulation.RunTick();
+        Transaction transaction = new AuctionService(
+            new SimulationSettings { AuctionIncrement = 0.5f })
+            .Settle(house, new Random(1))!;
 
-        Transaction transaction = Assert.Single(market.Transactions);
-        Assert.Equal(100f, transaction.SalePrice);
-        Assert.DoesNotContain(house, market.Houses);
-        MonthlyMarketReport report = Assert.Single(market.MonthlyReports);
-        Assert.Equal(0, report.PriceIncreases);
-        Assert.Equal(100f, report.AverageAskingPriceDuringMonth);
+        Assert.Same(winner, transaction.Buyer);
+        Assert.Equal(104.5f, transaction.SalePrice);
+        Assert.True(transaction.SalePrice <= 110);
+    }
+
+    [Fact]
+    public void SettlementNeverExceedsWinningMaximumBid()
+    {
+        House house = TestHouseFactory.Create(100);
+        _ = new Bid(CreateBuyer("A"), house, 105);
+        _ = new Bid(CreateBuyer("B"), house, 105);
+
+        Transaction transaction = new AuctionService(
+            new SimulationSettings { AuctionIncrement = 10 })
+            .Settle(house, new Random(1))!;
+
+        Assert.Equal(105, transaction.SalePrice);
     }
 
     [Fact]
     public void TiedBidOutcomeIsReproducibleWithSameSeed()
     {
-        string firstWinner = RunTiedBid(42);
-        string secondWinner = RunTiedBid(42);
+        Assert.Equal(RunTiedBid(42), RunTiedBid(42));
+    }
 
-        Assert.Equal(firstWinner, secondWinner);
+    [Fact]
+    public void SuccessfulBuyerCannotWinAnotherAuctionInSameMonth()
+    {
+        Buyer buyer = CreateBuyer("Buyer");
+        House first = TestHouseFactory.Create(100, "First");
+        House second = TestHouseFactory.Create(100, "Second");
+        _ = new Bid(buyer, first, 110);
+        _ = new Bid(buyer, second, 110);
+        HashSet<Buyer> successful = [];
+        AuctionService service = new();
+
+        Assert.NotNull(service.Settle(first, new Random(1), successful));
+        Assert.Null(service.Settle(second, new Random(1), successful));
     }
 
     private static string RunTiedBid(int seed)
     {
-        House house = CreateHouse(100);
+        House house = TestHouseFactory.Create(100);
         _ = new Bid(CreateBuyer("A"), house, 105);
         _ = new Bid(CreateBuyer("B"), house, 105);
-
-        return house.DeliberateBids(new Random(seed))!.Buyer.Name;
+        return new AuctionService().Settle(house, new Random(seed))!.Buyer.Name;
     }
 
-    private static House CreateHouse(float price)
-    {
-        return TestHouseFactory.Create(price);
-    }
-
-    private static Buyer CreateBuyer(string name, float motivation = 5)
-    {
-        return new Buyer(name, 30, 100, motivation, 100, false);
-    }
+    private static Buyer CreateBuyer(string name) =>
+        new(name, 30, 100, 5, 100, false);
 }

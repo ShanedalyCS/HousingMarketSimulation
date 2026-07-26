@@ -1,96 +1,250 @@
 # Housing Market Simulation
 
-A simple console-based, agent-style housing market written in C#. Buyers save money, evaluate affordability, choose a house, and submit bids. Houses can sell, remain listed, or change asking price in response to demand. The simulation records a monthly history and exports it to CSV.
+A seeded, monthly agent-style housing market written in C#. Buyers have different
+preferences, form their own willingness to pay, and submit one sealed bid per
+month. Completed sales feed back into comparable valuations and future seller
+prices.
 
-All monetary values are expressed in thousands. For example, `100 K` represents 100,000 in the simulated currency.
+All monetary values are expressed in thousands. For example, `100 K` represents
+100,000 in the simulated currency.
 
 ## Monthly lifecycle
 
 Each month runs in this order:
 
-1. Clear bidding state left from the previous month.
-2. Add 20% of each buyer's monthly salary to their savings.
-3. Calculate which houses each buyer can afford.
-4. Let each buyer choose their highest-quality affordable house and place one bid.
-5. Deliberate bids against the asking price that existed when the bids were placed.
-6. Record transactions and remove sold houses and successful buyers.
-7. Adjust prices only for houses that remain on the market.
-8. Record and print the end-of-month report.
-9. Add one buyer and one house that can participate starting next month.
+1. Clear previous bidding and buyer-selection state.
+2. Add 20% of monthly salary to each active buyer's savings.
+3. Increment `MonthsOnMarket` for every active listing.
+4. Recalculate each listing's `EstimatedMarketValue` from completed sales.
+5. Move asking prices gradually toward each seller's market-informed target.
+6. Let buyers evaluate listings using their personal preferences.
+7. Submit at most one sealed, affordability-capped bid per buyer.
+8. Settle each house's auction.
+9. Record transactions and remove sold houses and successful buyers.
+10. Reduce or market-adjust unsuccessful listings.
+11. Record the monthly report.
+12. Add configured new entrants. New houses use all transactions completed
+    through step 9 immediately, but participate beginning next month.
 
-The report is recorded before new entrants are added. Its active counts describe the buyers and houses that participated during the completed month. Average asking price uses those same active houses, including a sold house's final asking price and any end-of-month reduction applied to an unsold house. Remaining counts describe the inventory left after transactions.
+The default entrant counts are one buyer and one house per month.
 
-## Initial prices
+## Values and market feedback
 
-Generated houses receive a fundamental valuation from their physical and
-location characteristics. A seeded seller multiplier then sets the initial asking price.
-The fundamental value is retained even when market logic later changes that asking price.
+The model deliberately keeps four monetary concepts separate:
 
-## House valuation
+- `BaseValue` is the immutable fundamental cost valuation.
+- `EstimatedMarketValue` blends the fundamental value with similar completed
+  sales.
+- `AskingPrice` is the seller's current list price.
+- `SalePrice` is the auction settlement recorded in a transaction.
 
-All monetary values remain in thousands. Generated houses use:
+The cost valuation is:
 
 ```text
 BaseValue = LandValue + ReplacementCost - AgeDepreciation
 ```
 
 Land starts at `0.35 K` per plot square metre and uses a location multiplier.
-Replacement cost is floor area multiplied by the `1.8 K` construction cost and
-the build-quality multiplier. Replacement cost depreciates by 1% per year,
-capped at 60%.
+Replacement cost is floor area times `1.8 K`, adjusted for build quality.
+Replacement cost depreciates by 1% per year, capped at 60%.
 
-The initial asking price is the base value multiplied by a seeded seller factor
-between 0.95 and 1.15. Completed sales in the same location category update
-`EstimatedMarketValue` using average sale price per square metre.
-The comparable-sales weight grows with the number of sales and is capped at 70%;
-`BaseValue`, `AskingPrice`, `EstimatedMarketValue`, and transaction `SalePrice`
-remain separate.
+Each new house receives one seeded seller multiplier from 0.95 to 1.15. The
+multiplier persists for the entire listing; it is not redrawn monthly. Its
+market-informed target is:
 
-## Affordability and bids
+```text
+seller target = EstimatedMarketValue × persistent seller multiplier
+```
 
-A buyer must satisfy both limits:
+The asking price moves toward that target in either direction, capped by the
+configured maximum monthly adjustment (3% by default). This avoids abrupt resets.
 
-- savings must cover a minimum 20% deposit;
-- the purchase price cannot exceed savings plus a mortgage of four times annual salary.
+### Comparable sales
 
-The maximum purchase price is:
+Comparables are scored using location, floor-area similarity, build quality, and
+house age. Locations two or more categories apart are excluded. Remaining sales
+must meet the configured weighted-similarity threshold.
+
+The service applies the comparable's bounded sale-price-to-base-value ratio to
+the subject's own `BaseValue`. Similar transactions receive more weight. Total
+comparable influence grows with sample size and is capped at 70%; a single
+perfect comparable receives only 14% weight by default. Individual price ratios
+are bounded between 0.60 and 1.60, limiting the impact of an outlier. When there
+are no suitable comparables, the fundamental value is the fallback.
+
+Because buyers form perceived values from `EstimatedMarketValue`, transaction
+history affects future asking prices, buyer choices, maximum bids, and eventual
+sale prices.
+
+## Buyer decisions
+
+Generated buyers are at least 18 years old. Salary, savings, motivation, family
+status, and preferences all vary using the supplied seeded `Random`. A family is
+not assigned to every buyer; family-oriented generated preferences give more
+weight to floor and plot area.
+
+Every buyer has normalized weights for:
+
+- location desirability;
+- build quality;
+- floor area;
+- plot size;
+- lower house age.
+
+For each listing the decision service calculates two separate values:
+
+```text
+suitability = weighted normalized physical/location features
+perceived value = EstimatedMarketValue × (0.80 + 0.40 × suitability)
+motivated value = perceived value × (1 + motivation / 200)
+maximum bid = min(motivated value, affordability limit)
+```
+
+Suitability is unitless and drives 70% of the ranking. Value for money, derived
+from perceived value relative to asking price, drives 30%. These are kept
+separate because a preference-fit score and money are not interchangeable units.
+
+A buyer will consider a below-asking bid only when their maximum bid is within
+the configured tolerance (5% by default). Otherwise they do not bid. Equal
+ranking scores are resolved using the shared seeded random source.
+
+### Affordability
+
+The maximum purchase price remains:
 
 ```text
 minimum of:
-    savings / 20%
+    savings / 20% deposit rate
     savings + (annual salary × 4)
 ```
 
-A normal offer starts at the asking price and adds a 1% premium for each motivation point. An offer is always capped at the buyer's maximum purchase price.
+Willingness to pay and every submitted bid are capped by this limit.
 
-The highest bid meeting the asking price wins. Equal highest bids are settled by a random lottery. Supplying a seed makes that lottery reproducible.
+## Sealed-bid settlement
 
-## Price changes
+Each buyer can submit one bid and complete at most one purchase in a month.
+Auctions are processed with this rule:
 
-- A priced house receiving no bids is reduced by 2% if it remains for sale.
-- A remaining house receiving at least three bids increases by 2%.
-- Each bid beyond the three-bid threshold adds another 0.1 percentage points to that increase.
+1. If the highest available bid is below asking, no sale occurs.
+2. With one bid at or above asking, that bidder wins and pays the asking price.
+3. With multiple qualifying bids, the highest bidder wins and pays the lower of:
+   - their own maximum bid; or
+   - the greater of asking price and the second-highest bid plus the configured
+     increment (`0.50 K` by default).
+4. Equal highest bids use a seeded lottery.
 
-For example, a remaining house with 20 bids increases by `2% + (17 × 0.1%) = 3.7%`.
+Thus a winner never pays above their submitted maximum, and valid demand is not
+rejected merely because a listing receives several bids.
 
-## Running the simulation
+## Unsuccessful listings
 
-From the repository root:
+- No bids: reduce asking price by 2% by default.
+- One or more bids, all below asking: move halfway toward the highest rejected
+  bid by default, still subject to the monthly movement cap.
+- Successful sale: remove the listing and use its transaction as a future
+  comparable.
+
+Upward movement comes from successful sale evidence, comparable estimates, and
+seller targets rather than an artificial bid-count branch.
+
+## Configuration
+
+`SimulationSettings` contains:
+
+- new buyers and houses per month;
+- no-bid reduction;
+- maximum monthly market-value adjustment;
+- below-asking tolerance;
+- auction increment;
+- rejected-bid adjustment rate;
+- monthly savings rate.
+
+`ValuationSettings` contains the cost inputs, seller multiplier range,
+comparable weights and similarity threshold, similarity component weights,
+sample-size cap, and outlier bounds. No dependency-injection framework is
+required; settings can be passed directly to the services or `Simulation`.
+Both settings types reject non-finite values, invalid rate ranges, inconsistent
+bounds, and incomplete multiplier dictionaries instead of silently correcting
+them.
+
+Interactive mode offers a quick default path:
+
+```text
+Use default simulation settings? (y/n) [y]:
+```
+
+Press Enter or enter `y` to use the documented defaults. Enter `n` to configure
+monthly entrant counts, no-bid reduction, maximum market-value movement,
+below-asking tolerance, auction increment, rejected-bid adjustment, and monthly
+savings. Every prompt shows its default; Enter accepts it. Percentages are
+entered as user-facing values from 0 to 100 and converted to decimal rates.
+Invalid text or out-of-range input is explained and prompted again.
+
+## Monthly reports and CSV snapshots
+
+Every report preserves the original fields and adds:
+
+- median asking price;
+- median sale price;
+- average sale-to-list ratio;
+- average time on market for sold houses;
+- total transaction value.
+
+Snapshot definitions are:
+
+- **active buyers/houses**: entrants present at the start of that month;
+- **bids and transactions**: activity completed in that month;
+- **average and median asking price**: list prices after the beginning-of-month
+  comparable update and seller movement, at the exact point buyers evaluate
+  houses; this includes every house active that month;
+- **average and median sale price**: completed sales that month, or zero when
+  none complete;
+- **sale-to-list ratio**: each sale price divided by that house's asking price
+  at bidding time, averaged across completed sales;
+- **time on market**: completed sales' `MonthsOnMarket`, averaged in months;
+- **total transaction value**: sum of the month's sale prices;
+- **remaining buyers/houses**: after sales and unsuccessful price adjustments,
+  before new entrants; `HousesRemaining` is the single ending-inventory metric;
+- **price reductions/increases**: unique listings whose final asking price is
+  below or above its price at the start of the tick. Each originally active
+  listing, including a sold one, is counted at most once according to its net
+  movement after all monthly adjustments;
+- **change since start**: evaluation-time average asking price compared with the
+  initial market's average asking price.
+
+The CSV is written to `monthly-market-reports.csv` in the launch directory. It
+uses invariant-culture decimal formatting and one row per report.
+
+## Running
 
 ```powershell
 dotnet run
 ```
 
-The program asks for:
+The program asks for initial buyers, initial houses, an optional integer seed,
+the number of months, and whether to use default simulation settings. Counts and
+the seed are validated without crashing on invalid text. Reusing the same seed
+and settings reproduces generation, preferences, choices, ties, transactions,
+and reports.
 
-1. initial buyer count;
-2. initial house count;
-3. an optional integer random seed;
-4. number of months to simulate.
+### Reproducible scenarios
 
-Press Enter at the seed prompt for a non-reproducible run. Reusing the same seed and starting inputs produces the same generated market and tied-bid outcomes.
+Run the balanced, excess-demand, and excess-supply 120-month scenarios without
+interactive prompts:
 
-## Tests
+```powershell
+dotnet run -- --scenarios
+```
+
+The command prints a concise comparison and writes deterministic report files:
+
+```text
+scenario-output/balanced-market.csv
+scenario-output/excess-demand-market.csv
+scenario-output/excess-supply-market.csv
+```
+
+Scenario mode does not overwrite `monthly-market-reports.csv`.
 
 Run the complete xUnit suite with:
 
@@ -98,23 +252,25 @@ Run the complete xUnit suite with:
 dotnet test HousingMarketSimulation.slnx
 ```
 
-The tests cover affordability, bid acceptance, asking-price timing, monthly price reductions, report snapshots, entrant timing, initial-data reproducibility, valuation, and reproducible tie-breaking.
+The suite includes targeted reporting and settings tests plus 120-month sanity
+checks. Long-run validation covers finite and non-negative monetary values,
+transaction/report consistency, unique sold houses and successful buyers,
+movement-count bounds, deterministic replay, and all three supplied scenarios.
+It deliberately avoids narrow price-range assertions that would prevent
+legitimate emergent behavior.
 
-## CSV reports
+GitHub Actions runs restore, Release build, and the complete Release test suite
+on pushes to `main` or `master` and pull requests targeting `main`.
 
-After the simulation finishes, all monthly reports are exported to:
+## Modelling limitations
 
-```text
-monthly-market-reports.csv
-```
-
-The file is created in the working directory from which the program was launched. It contains one row per month and uses invariant-culture decimal formatting.
-
-## Current limitations
-
-- Houses make simple rule-based acceptance and pricing decisions; there are no true seller agents.
-- Buyers all rank houses using the same combined quality score, so preferences are not heterogeneous.
-- Buyers submit only one bid per month.
-- The model does not deduct a completed purchase from savings or model repayments after purchase because successful buyers leave the market.
-- There are no interest rates, taxes, transaction costs, rental markets, construction delays, or geographic submarkets.
-- Prices and behavior are intentionally simplified for readability rather than calibrated to real housing data.
+- Preference and valuation formulas are explanatory rules, not empirically
+  calibrated demand estimates.
+- There are no interest rates, repayments, taxes, transaction costs, rental
+  markets, construction delays, or geographic submarkets.
+- Successful buyers leave the market, so purchase cash flows are not modelled
+  afterward.
+- Sellers have persistent pricing tendencies but are not strategic agents.
+- Auctions process houses in stable market-list order. The one-purchase rule can
+  therefore matter if externally supplied bids put one buyer into multiple
+  auctions; normal simulation buyers submit only one bid.

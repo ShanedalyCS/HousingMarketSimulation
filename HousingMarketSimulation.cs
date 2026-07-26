@@ -1,36 +1,32 @@
 public class HousingMarketSimulation
 {
-
     public static void Main(string[] args)
     {
+        if (args.Any(argument =>
+            string.Equals(argument, "--scenarios", StringComparison.OrdinalIgnoreCase)))
+        {
+            string outputDirectory = Path.Combine(
+                Environment.CurrentDirectory,
+                "scenario-output");
+            ScenarioRunner.RunAll(outputDirectory, Console.Out);
+            return;
+        }
+
+        ConsoleInputReader input = new(Console.In, Console.Out);
+        int numberOfBuyers = input.ReadNonNegativeInt("How many people? ");
+        int numberOfHouses = input.ReadNonNegativeInt("How many houses? ");
+        int? seed = input.ReadOptionalSeed(
+            "Optional random seed (press Enter for a random run): ");
+        int numberOfTicks = input.ReadNonNegativeInt("How many months to simulate? ");
+        SimulationSettings settings = input.ReadSimulationSettings();
+
         Market market = new();
-
-        Console.WriteLine("How many people?");
-        int numberOfBuyers = int.Parse(Console.ReadLine()!);
-
-        Console.WriteLine("How many houses?");
-        int numberOfHouses = int.Parse(Console.ReadLine()!);
-
-        Console.WriteLine("Optional random seed (press Enter for a random run):");
-        string? seedInput = Console.ReadLine();
-        Random random = int.TryParse(seedInput, out int seed)
-            ? new Random(seed)
-            : new Random();
+        Random random = seed.HasValue ? new Random(seed.Value) : new Random();
         DataGenerator dataGenerator = new(random);
-
         dataGenerator.GenerateData(numberOfBuyers, numberOfHouses, market);
 
-
-
-        Simulation simulation = new(market, dataGenerator);
-
-        Console.WriteLine("How many months to simulate?");
-        int numberOfTicks = int.Parse(Console.ReadLine()!);
-
-        for (int i = 0; i < numberOfTicks; i++)
-        {
-            simulation.RunTick();
-        }
+        Simulation simulation = new(market, dataGenerator, settings);
+        for (int i = 0; i < numberOfTicks; i++) simulation.RunTick();
 
         string reportPath = Path.Combine(
             Environment.CurrentDirectory,

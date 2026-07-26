@@ -1,7 +1,5 @@
 public class House
 {
-    public List<Bid> bids = [];
-
     public House(
         string name,
         float floorAreaSquareMetres,
@@ -10,7 +8,8 @@ public class House
         PropertyQuality buildQuality,
         LocationDesirability location,
         HouseValuationService valuationService,
-        Random random)
+        Random random,
+        IEnumerable<Transaction>? completedTransactions = null)
     {
         Name = name;
         FloorAreaSquareMetres = floorAreaSquareMetres;
@@ -21,19 +20,24 @@ public class House
         ValidateCharacteristics();
 
         BaseValue = valuationService.CalculateBaseValue(this);
+        SellerPricingMultiplier = valuationService.GenerateSellerPricingMultiplier(random);
         EstimatedMarketValue = BaseValue;
-        AskingPrice = valuationService.GenerateAskingPrice(BaseValue, random);
+        valuationService.EstimateMarketValue(this, completedTransactions ?? []);
+        AskingPrice = MathF.Round(EstimatedMarketValue * SellerPricingMultiplier, 2);
     }
 
     public string Name { get; set; }
     public float BaseValue { get; private set; }
     public float AskingPrice { get; set; }
     public float EstimatedMarketValue { get; internal set; }
+    public float SellerPricingMultiplier { get; }
+    public int MonthsOnMarket { get; internal set; }
     public PropertyQuality BuildQuality { get; set; } = PropertyQuality.Standard;
     public LocationDesirability Location { get; set; } = LocationDesirability.Average;
     public float FloorAreaSquareMetres { get; set; }
     public float PlotSizeSquareMetres { get; set; }
     public float AgeYears { get; set; }
+    public List<Bid> Bids { get; } = [];
 
     public float Quality =>
         FloorAreaSquareMetres + PlotSizeSquareMetres / 4f + (int)BuildQuality * 10f;
@@ -45,20 +49,8 @@ public class House
         if (AgeYears < 0) throw new ArgumentOutOfRangeException(nameof(AgeYears));
     }
 
-    public Transaction? DeliberateBids(Random random)
-    {
-        if (bids.Count == 0) return null;
-        float highestOffer = bids.Max(bid => bid.offerAmount);
-        if (highestOffer < AskingPrice)
-        {
-            Console.WriteLine($"{Name} rejected all bids and remains on the market at {AskingPrice:F2} K");
-            return null;
-        }
-
-        List<Bid> highestBids = bids.Where(bid => bid.offerAmount == highestOffer).ToList();
-        Bid winningBid = highestBids[random.Next(highestBids.Count)];
-        return new Transaction(winningBid.buyer, this, winningBid.offerAmount);
-    }
+    public Transaction? DeliberateBids(Random random) =>
+        new AuctionService().Settle(this, random);
 
     public string PrintAll() => "name : " + Name;
 }
