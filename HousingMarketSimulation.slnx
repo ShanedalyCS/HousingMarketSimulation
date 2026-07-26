@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="src/HousingMarketSimulation/HousingMarketSimulation.csproj" />
+  <Project Path="src/HousingMarketSimulation.Desktop/HousingMarketSimulation.Desktop.csproj" />
   <Project Path="tests/HousingMarketSimulation.Tests/HousingMarketSimulation.Tests.csproj" />
 </Solution>
