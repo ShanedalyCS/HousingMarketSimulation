@@ -49,7 +49,7 @@ public sealed class LiveDashboardForm : Form
     private readonly LiveScatterChart listingsPriceChart = new()
     {
         Dock = DockStyle.Fill,
-        AccessibleName = "Houses on market versus average asking price chart"
+        AccessibleName = "Houses on market versus average sale price chart"
     };
 
     private LiveSimulationSession? session;

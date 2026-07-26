@@ -177,7 +177,9 @@ tick. Each time-series chart's x-axis expands to the latest completed month, so
 a run at month 10 ends at M10 and a long run continues scaling through M1200
 rather than reserving the configured duration in advance. The **Supply vs
 price** view is a scatter chart with active house listings on the x-axis and
-average asking price on the y-axis; each point represents one simulated month.
+average completed sale price on the y-axis. Each point represents a simulated
+month with at least one sale; months without a transaction are omitted rather
+than displayed as a zero price.
 The **Supply & demand** view compares active buyers with the houses available at
 the start of each month's trading. Ending inventory remains available in the
 analytics exports but is omitted from this view because it is simply the

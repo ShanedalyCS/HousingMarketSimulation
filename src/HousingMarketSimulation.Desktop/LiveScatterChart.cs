@@ -39,13 +39,13 @@ internal sealed class LiveScatterChart : Control
         using SolidBrush mutedBrush = new(MutedColor);
         using Font titleFont = new("Segoe UI Semibold", 14f);
         graphics.DrawString(
-            "Houses on market vs average asking price",
+            "Houses on market vs average sale price",
             titleFont,
             textBrush,
             20,
             15);
         graphics.DrawString(
-            "Each point is one simulated month",
+            "Each point is a simulated month with at least one sale",
             Font,
             mutedBrush,
             22,
@@ -74,8 +74,8 @@ internal sealed class LiveScatterChart : Control
             points.Max(snapshot => (float)snapshot.ActiveListings),
             includeZeroWhenClose: true);
         (float yMinimum, float yMaximum) = ExpandedRange(
-            points.Min(snapshot => snapshot.RawAverageAskingPrice!.Value),
-            points.Max(snapshot => snapshot.RawAverageAskingPrice!.Value),
+            points.Min(snapshot => snapshot.RawAverageSalePrice!.Value),
+            points.Max(snapshot => snapshot.RawAverageSalePrice!.Value),
             includeZeroWhenClose: false);
 
         DrawGrid(
@@ -113,8 +113,8 @@ internal sealed class LiveScatterChart : Control
             points.Max(snapshot => (float)snapshot.ActiveListings),
             includeZeroWhenClose: true);
         (float yMinimum, float yMaximum) = ExpandedRange(
-            points.Min(snapshot => snapshot.RawAverageAskingPrice!.Value),
-            points.Max(snapshot => snapshot.RawAverageAskingPrice!.Value),
+            points.Min(snapshot => snapshot.RawAverageSalePrice!.Value),
+            points.Max(snapshot => snapshot.RawAverageSalePrice!.Value),
             includeZeroWhenClose: false);
 
         MonthlyAnalyticsSnapshot nearest = points
@@ -149,7 +149,7 @@ internal sealed class LiveScatterChart : Control
         tooltip.Show(
             $"Month {nearest.Month}{Environment.NewLine}" +
             $"Houses on market: {nearest.ActiveListings:N0}{Environment.NewLine}" +
-            $"Average asking: {nearest.RawAverageAskingPrice:0.##} K",
+            $"Average sale: {nearest.RawAverageSalePrice:0.##} K",
             this,
             Math.Min(e.X + 14, Math.Max(0, Width - 220)),
             Math.Min(e.Y + 14, Math.Max(0, Height - 110)),
@@ -177,7 +177,7 @@ internal sealed class LiveScatterChart : Control
 
     private MonthlyAnalyticsSnapshot[] ValidSnapshots() => snapshots
         .Where(snapshot =>
-            snapshot.RawAverageAskingPrice is { } price
+            snapshot.RawAverageSalePrice is { } price
             && float.IsFinite(price))
         .ToArray();
 
@@ -288,7 +288,7 @@ internal sealed class LiveScatterChart : Control
                 / (xMaximum - xMinimum)
                 * plot.Width,
             plot.Bottom
-                - (snapshot.RawAverageAskingPrice!.Value - yMinimum)
+                - (snapshot.RawAverageSalePrice!.Value - yMinimum)
                 / (yMaximum - yMinimum)
                 * plot.Height);
 
@@ -315,7 +315,7 @@ internal sealed class LiveScatterChart : Control
         GraphicsState state = graphics.Save();
         graphics.TranslateTransform(17, plot.Top + plot.Height / 2);
         graphics.RotateTransform(-90);
-        const string yTitle = "Average asking price (K)";
+        const string yTitle = "Average sale price (K)";
         SizeF ySize = graphics.MeasureString(yTitle, SystemFonts.DefaultFont);
         graphics.DrawString(
             yTitle,
