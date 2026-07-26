@@ -172,7 +172,7 @@ inflows. Then:
 
 Choose **Instant · no delay** to run ticks back-to-back while still yielding to
 the Windows message loop between months so the dashboard can repaint and Pause
-remains responsive. Eight KPI cards and five chart views update after every
+remains responsive. Nine KPI cards and five chart views update after every
 tick. Each time-series chart's x-axis expands to the latest completed month, so
 a run at month 10 ends at M10 and a long run continues scaling through M1200
 rather than reserving the configured duration in advance. The **Supply vs
@@ -185,6 +185,10 @@ the start of each month's trading. Ending inventory remains available in the
 analytics exports but is omitted from this view because it is simply the
 post-transaction, pre-new-listing balance for the same month. Houses on market
 use a dashed gold line so both series remain visible when their values coincide.
+The top cards show both the current month's average asking and completed sale
+prices. **Sale / asking** is the average transaction sale price divided by that
+house's asking price at sale time; 100% means it sold at asking, while a value
+above 100% reflects competing qualifying bids.
 
 The desktop app uses `LiveSimulationSession`, which delegates directly to the
 existing `Simulation.RunTick()` method; it does not reimplement market logic.

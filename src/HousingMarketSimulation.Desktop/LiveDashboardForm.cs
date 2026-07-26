@@ -175,7 +175,7 @@ public sealed class LiveDashboardForm : Form
             AutoSize = false,
             Height = 86,
             Dock = DockStyle.Top,
-            ColumnCount = 8,
+            ColumnCount = 9,
             RowCount = 1,
             Margin = new Padding(0, 0, 0, 12)
         };
@@ -187,12 +187,15 @@ public sealed class LiveDashboardForm : Form
             "Transactions",
             "Quality index",
             "Average asking",
-            "Sale / list",
+            "Average sale",
+            "Sale / asking",
             "Time on market"
         ];
         foreach (string metric in metrics)
         {
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
+            grid.ColumnStyles.Add(new ColumnStyle(
+                SizeType.Percent,
+                100f / metrics.Length));
             grid.Controls.Add(CreateKpi(metric));
         }
         return grid;
@@ -405,7 +408,8 @@ public sealed class LiveDashboardForm : Form
         SetKpi("Transactions", session.Market.Transactions.Count.ToString("N0"));
         SetKpi("Quality index", Format(latest?.ConstantQualityPriceIndex));
         SetKpi("Average asking", Format(latest?.RawAverageAskingPrice, " K"));
-        SetKpi("Sale / list", FormatPercent(latest?.AverageSaleToListRatio));
+        SetKpi("Average sale", Format(latest?.RawAverageSalePrice, " K"));
+        SetKpi("Sale / asking", FormatPercent(latest?.AverageSaleToListRatio));
         SetKpi("Time on market", Format(latest?.AverageTimeOnMarket, " mo"));
         progress.Value = Math.Clamp(
             session.CurrentMonth,
