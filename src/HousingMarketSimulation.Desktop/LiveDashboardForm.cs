@@ -46,6 +46,11 @@ public sealed class LiveDashboardForm : Form
         Dock = DockStyle.Fill,
         AccessibleName = "Bids and transactions chart"
     };
+    private readonly LiveScatterChart listingsPriceChart = new()
+    {
+        Dock = DockStyle.Fill,
+        AccessibleName = "Houses on market versus average asking price chart"
+    };
 
     private LiveSimulationSession? session;
     private bool isRunning;
@@ -217,15 +222,16 @@ public sealed class LiveDashboardForm : Form
             BackColor = Color.FromArgb(9, 10, 12),
             Padding = new Padding(2)
         };
-        (string Name, LiveLineChart Chart)[] items =
+        (string Name, Control Chart)[] items =
         [
             ("Prices", priceChart),
             ("Quality index", qualityChart),
             ("Supply & demand", supplyChart),
-            ("Activity", activityChart)
+            ("Activity", activityChart),
+            ("Supply vs price", listingsPriceChart)
         ];
         List<Button> buttons = [];
-        foreach ((string name, LiveLineChart chart) in items)
+        foreach ((string name, Control chart) in items)
         {
             chart.Visible = false;
             chartHost.Controls.Add(chart);
@@ -415,6 +421,7 @@ public sealed class LiveDashboardForm : Form
         qualityChart.UpdateData(snapshots);
         supplyChart.UpdateData(snapshots);
         activityChart.UpdateData(snapshots);
+        listingsPriceChart.UpdateData(snapshots);
 
         if (latest is not null)
         {
@@ -470,6 +477,7 @@ public sealed class LiveDashboardForm : Form
         qualityChart.UpdateData([]);
         supplyChart.UpdateData([]);
         activityChart.UpdateData([]);
+        listingsPriceChart.UpdateData([]);
     }
 
     private void ApplySelectedSpeed()
@@ -572,12 +580,12 @@ public sealed class LiveDashboardForm : Form
     }
 
     private static void SelectChart(
-        LiveLineChart selectedChart,
+        Control selectedChart,
         Button selectedButton,
-        IReadOnlyCollection<(string Name, LiveLineChart Chart)> items,
+        IReadOnlyCollection<(string Name, Control Chart)> items,
         IReadOnlyCollection<Button> buttons)
     {
-        foreach ((_, LiveLineChart chart) in items)
+        foreach ((_, Control chart) in items)
         {
             chart.Visible = chart == selectedChart;
             if (chart.Visible) chart.BringToFront();

@@ -172,10 +172,12 @@ inflows. Then:
 
 Choose **Instant · no delay** to run ticks back-to-back while still yielding to
 the Windows message loop between months so the dashboard can repaint and Pause
-remains responsive. Eight KPI cards and four chart views update after every
-tick. Each chart's x-axis expands to the latest completed month, so a run at
-month 10 ends at M10 and a long run continues scaling through M1200 rather than
-reserving the configured duration in advance.
+remains responsive. Eight KPI cards and five chart views update after every
+tick. Each time-series chart's x-axis expands to the latest completed month, so
+a run at month 10 ends at M10 and a long run continues scaling through M1200
+rather than reserving the configured duration in advance. The **Supply vs
+price** view is a scatter chart with active house listings on the x-axis and
+average asking price on the y-axis; each point represents one simulated month.
 
 The desktop app uses `LiveSimulationSession`, which delegates directly to the
 existing `Simulation.RunTick()` method; it does not reimplement market logic.
